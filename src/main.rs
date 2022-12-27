@@ -1,5 +1,6 @@
 use rand::{seq::IteratorRandom, thread_rng};
-
+use std::io;
+use tui::{backend::CrosstermBackend, Terminal};
 #[derive(Clone)]
 struct Entry {
     id: i32,
@@ -144,4 +145,9 @@ impl Sheet {
 
 fn tui_testing() {}
 
-fn main() {}
+fn main() -> Result<(), io::Error> {
+    let stdout = io::stdout();
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend)?;
+    Ok(())
+}
