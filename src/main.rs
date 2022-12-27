@@ -138,4 +138,10 @@ impl Sheet {
     }
 }
 
+//fn load_db() -> (Vec<Entry>, Vec<Sheet>) {}
+
+//fn save_db(all_entries: Vec<Entry>, all_sheets: Vec<Sheet>) {}
+
+fn tui_testing() {}
+
 fn main() {}
