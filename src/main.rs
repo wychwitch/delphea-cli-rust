@@ -46,11 +46,18 @@ impl Entry {
         self.won_against.append(&mut save);
     }
 
-    pub fn id_to_entry(entry_id: i32, all_entries: Vec<Entry>) -> Entry {
+    pub fn id_to_entry(entry_id: i32, all_entries: &Vec<Entry>) -> &Entry {
         all_entries
             .into_iter()
             .find(|entry| entry.id == entry_id)
             .unwrap()
+    }
+    pub fn entries_vec_to_id(entries: &Vec<Entry>) -> Vec<i32> {
+        entries
+            .into_iter()
+            .clone()
+            .map(|entry| entry.id)
+            .collect::<Vec<i32>>()
     }
 
     pub fn check_if_favorite(&mut self, all_sheet_entries: &Vec<Entry>) -> bool {
@@ -85,12 +92,22 @@ impl Sheet {
             entry.clear_wins();
         }
     }
+
+    pub fn handle_choices(winners: &mut Vec<Entry>, losers: &Vec<Entry>) {
+        //have this actually update the choices later, rn it just sets the first element to be picked
+        let loser_ids = Entry::entries_vec_to_id(losers);
+        for entry in winners {
+            entry.won_against.append(&mut loser_ids.clone())
+        }
+    }
+
     pub fn display_choices(
         &mut self,
-        random_entries: &Vec<Entry>,
+        random_entries: &mut Vec<Entry>,
         all_sheet_entries: &Vec<Entry>,
     ) -> Vec<Entry> {
-        //something something display choices and get choices
+        //another fn that assigns won against
+        let winners: Vec<Entry> = Vec::new();
         let random_clone = random_entries.clone().to_owned();
         random_clone
             .into_iter()
@@ -103,14 +120,15 @@ impl Sheet {
             })
             .collect()
     }
-    pub fn picker(&mut self, mut all_entries: Vec<Entry>) {
+    pub fn picker(&mut self, all_entries: Vec<Entry>) {
         let mut rng = thread_rng();
         let mut filtered_entries = self.get_entries(&all_entries);
         while filtered_entries.len() != 0 {
-            let random_entries = filtered_entries.into_iter().choose_multiple(&mut rng, 20);
-            let picked_entries = self.display_choices(&random_entries, &all_entries);
+            let mut random_entries = filtered_entries.into_iter().choose_multiple(&mut rng, 20);
 
-            let cleaned = filtered_entries
+            let picked_entries = self.display_choices(&mut random_entries, &all_entries);
+
+            let cleaned = picked_entries
                 .into_iter()
                 .filter(|entry| !entry.favorited)
                 .collect();
