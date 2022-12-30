@@ -1,12 +1,27 @@
 use rand::{seq::IteratorRandom, thread_rng};
-use std::io;
+use std::{io, vec};
 use tui::{backend::CrosstermBackend, Terminal};
+
+const fn load_db() -> Database {
+    Database {
+        entries: Vec::new(),
+        sheets: Vec::new(),
+    }
+}
+static DB: Database = load_db();
+
+struct Database {
+    entries: Vec<Entry>,
+    sheets: Vec<Sheet>,
+}
+
 #[derive(Clone)]
 struct Entry {
     id: i32,
     sheet_id: i32,
     name: String,
     color: String,
+    all_sibling_entries: Vec<i32>,
     won_against: Vec<i32>,
     note: String,
     favorited: bool,
@@ -21,6 +36,21 @@ struct Sheet {
 }
 
 impl Entry {
+    pub fn new(sheet_id: i32, name: &str, color: &str, note: &str) -> Entry {
+        Entry {
+            id: DB.entries.len() as i32,
+            sheet_id,
+            name: name.to_string(),
+            color: color.to_uppercase(),
+            note: note.to_string(),
+            all_sibling_entries: Entry::entries_vec_to_id(&Sheet::get_entries_by_sheet_id(
+                sheet_id,
+            )),
+            won_against: vec![],
+            favorited: false,
+        }
+    }
+
     pub fn get_sheet(&self, sheets: Vec<Sheet>) -> Sheet {
         sheets
             .into_iter()
@@ -33,6 +63,7 @@ impl Entry {
         let mut picked: Vec<i32> = losers.into_iter().map(|loser| loser.id).collect();
         self.won_against.append(&mut picked);
     }
+
     pub fn clear_wins(&mut self) {
         self.won_against = vec![];
     }
@@ -47,8 +78,9 @@ impl Entry {
         self.won_against.append(&mut save);
     }
 
-    pub fn id_to_entry(entry_id: i32, all_entries: &Vec<Entry>) -> &Entry {
-        all_entries
+    pub fn id_to_entry(entry_id: i32) -> Entry {
+        DB.entries
+            .clone()
             .into_iter()
             .find(|entry| entry.id == entry_id)
             .unwrap()
@@ -78,8 +110,9 @@ impl Entry {
 }
 
 impl Sheet {
-    pub fn get_entries(&self, all_entries: &Vec<Entry>) -> Vec<Entry> {
-        let filtered = all_entries
+    pub fn get_entries(&self) -> Vec<Entry> {
+        let filtered = DB
+            .entries
             .clone()
             .into_iter()
             .filter(|entry| entry.sheet_id == self.id)
@@ -87,8 +120,28 @@ impl Sheet {
             .to_vec();
         filtered
     }
-    pub fn clear_all_favorites(&mut self, all_entries: Vec<Entry>) {
-        let all_sheet_entries = self.get_entries(&all_entries);
+
+    pub fn get_sheet_by_id(sheet_id: i32) -> Sheet {
+        DB.sheets
+            .clone()
+            .into_iter()
+            .find(|sheet| sheet.id == sheet_id)
+            .unwrap()
+    }
+
+    pub fn get_entries_by_sheet_id(sheet_id: i32) -> Vec<Entry> {
+        let filtered = DB
+            .entries
+            .clone()
+            .into_iter()
+            .filter(|entry| entry.sheet_id == sheet_id)
+            .collect::<Vec<Entry>>()
+            .to_vec();
+        filtered
+    }
+
+    pub fn clear_all_favorites(&mut self) {
+        let all_sheet_entries = self.get_entries();
         for mut entry in all_sheet_entries {
             entry.clear_wins();
         }
@@ -108,7 +161,6 @@ impl Sheet {
         all_sheet_entries: &Vec<Entry>,
     ) -> Vec<Entry> {
         //another fn that assigns won against
-        let winners: Vec<Entry> = Vec::new();
         let random_clone = random_entries.clone().to_owned();
         random_clone
             .into_iter()
@@ -121,13 +173,13 @@ impl Sheet {
             })
             .collect()
     }
-    pub fn picker(&mut self, all_entries: Vec<Entry>) {
+    pub fn picker(&mut self) {
         let mut rng = thread_rng();
-        let mut filtered_entries = self.get_entries(&all_entries);
+        let mut filtered_entries = self.get_entries();
         while filtered_entries.len() != 0 {
             let mut random_entries = filtered_entries.into_iter().choose_multiple(&mut rng, 20);
 
-            let picked_entries = self.display_choices(&mut random_entries, &all_entries);
+            let picked_entries = self.display_choices(&mut random_entries, &DB.entries);
 
             let cleaned = picked_entries
                 .into_iter()
@@ -139,7 +191,15 @@ impl Sheet {
     }
 }
 
-//fn load_db() -> (Vec<Entry>, Vec<Sheet>) {}
+enum DbTypes {
+    Sheet,
+    Entry,
+}
+
+enum DbReturnTypes {
+    Sheets(Vec<Sheet>),
+    Entries(Vec<Entry>),
+}
 
 //fn save_db(all_entries: Vec<Entry>, all_sheets: Vec<Sheet>) {}
 
