@@ -11,6 +11,7 @@ use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::models::Entry;
 use crate::models::Sheet;
+use crate::models::Win;
 
 pub fn establish_connection() -> SqliteConnection {
     dotenv().ok();
@@ -46,6 +47,16 @@ struct Database {
     sheets: Vec<Sheet>,
 }
 
+impl Win {
+    pub fn new(winner_id: i32, loser_id: i32, all_wins_length: i32) -> Win {
+        Win {
+            id: all_wins_length,
+            winner_id,
+            loser_id,
+        }
+    }
+}
+
 impl Entry {
     pub fn new(entries: Vec<Entry>, sheet_id: i32, name: &str, color: &str, note: &str) -> Entry {
         Entry {
@@ -54,7 +65,6 @@ impl Entry {
             name: name.to_string(),
             color: color.to_uppercase(),
             note: note.to_string(),
-            won_against: vec![],
             favorited: false,
         }
     }
@@ -67,23 +77,72 @@ impl Entry {
             .to_owned()
     }
 
-    pub fn track_wins(&mut self, losers: &Vec<Entry>) {
-        let mut picked: Vec<i32> = losers.into_iter().map(|loser| loser.id).collect();
-        self.won_against.append(&mut picked);
-    }
-
-    pub fn clear_wins(&mut self) {
-        self.won_against = vec![];
-    }
-
-    pub fn clear_deleted_loss(&mut self, rem_loser_id: &i32) {
-        let mut save: Vec<i32> = self
-            .won_against
-            .clone()
+    pub fn track_wins(&self, losers: &Vec<Entry>, all_wins: &mut Vec<Win>) {
+        let mut picked: Vec<Win> = losers
             .into_iter()
-            .filter(|loser_id| loser_id != rem_loser_id)
+            .map(|loser| Win::new(self.id, loser.id, all_wins.len() as i32))
             .collect();
-        self.won_against.append(&mut save);
+        all_wins.append(&mut picked);
+    }
+
+    pub fn clear_wins(&self, all_wins: &mut Vec<Win>) {
+        let mut i: usize = 0;
+
+        let mut affected_indexes: Vec<usize> = Vec::new();
+        for win in &mut *all_wins {
+            if win.winner_id == self.id {
+                affected_indexes.push(i);
+            } else {
+                i += 1;
+            }
+        }
+
+        for i in affected_indexes {
+            all_wins.remove(i);
+        }
+
+        let mut i = 1;
+        for win in all_wins {
+            win.id = i;
+            i += 1;
+        }
+    }
+
+    pub fn get_wins(&self, all_wins: &Vec<Win>) -> Vec<Win> {
+        let wins: Vec<&Win> = all_wins.iter().filter(|win| win.id == self.id).collect();
+        wins.iter()
+            .map(|win| {
+                Win::new(
+                    win.winner_id,
+                    win.loser_id,
+                    all_wins.len().try_into().unwrap(),
+                )
+            })
+            .collect()
+    }
+    pub fn get_wins_ids(&self, all_wins: &Vec<Win>) -> Vec<i32> {
+        let won_against: Vec<i32> = self
+            .get_wins(all_wins)
+            .into_iter()
+            .map(|win| win.loser_id)
+            .collect();
+        won_against
+    }
+
+    pub fn clear_deleted_loss(&mut self, rem_loser_id: &i32, all_wins: &mut Vec<Win>) {
+        let won_against = self.get_wins_ids(all_wins);
+
+        let mut affected_indexes: Vec<i32> = vec![];
+        for i in 0..all_wins.len() {
+            if all_wins[i].loser_id == *rem_loser_id {
+                affected_indexes.push(i.try_into().unwrap());
+            }
+        }
+        let mut y = 0;
+        for i in affected_indexes {
+            all_wins.remove((i - y).try_into().unwrap());
+            y += 1;
+        }
     }
 
     pub fn id_to_entry(entries: Vec<Entry>, entry_id: i32) -> Entry {
@@ -101,14 +160,25 @@ impl Entry {
             .collect::<Vec<i32>>()
     }
 
-    pub fn check_if_favorite(&mut self, all_sheet_entries: &Vec<Entry>) -> bool {
+    pub fn check_if_favorite(
+        &mut self,
+        all_sheet_entries: &Vec<Entry>,
+        all_wins: &Vec<Win>,
+    ) -> bool {
+        let won_against: Vec<i32> = self
+            .get_wins(all_wins)
+            .into_iter()
+            .map(|win| win.loser_id)
+            .collect();
+
         let filtered_entries: Vec<&Entry> = all_sheet_entries
             .into_iter()
             .filter(|entry| !entry.favorited)
             .collect();
+
         if filtered_entries
             .into_iter()
-            .all(|entry| self.won_against.contains(&entry.id))
+            .all(|entry| won_against.contains(&entry.id))
         {
             true
         } else {
@@ -146,18 +216,33 @@ impl Sheet {
         filtered
     }
 
-    pub fn clear_all_favorites(&mut self, entries: Vec<Entry>) {
+    pub fn clear_all_favorites(&mut self, entries: Vec<Entry>, all_winners: &mut Vec<Win>) {
         let all_sheet_entries = self.get_entries(entries);
         for mut entry in all_sheet_entries {
-            entry.clear_wins();
+            entry.clear_wins(all_winners);
         }
     }
 
-    pub fn handle_choices(winners: &mut Vec<Entry>, losers: &Vec<Entry>) {
+    pub fn handle_choices(
+        winners: &mut Vec<Entry>,
+        losers: &Vec<Entry>,
+        all_winners: &mut Vec<Win>,
+    ) {
         //have this actually update the choices later, rn it just sets the first element to be picked
         let loser_ids = Entry::entries_vec_to_id(losers);
-        for entry in winners {
-            entry.won_against.append(&mut loser_ids.clone())
+        let mut i = 0;
+        for winner in winners {
+            let win_len: i32 = all_winners.len().try_into().unwrap();
+
+            let mut winmap = loser_ids
+                .iter()
+                .map(|loser_id| {
+                    let win = Win::new(winner.id, *loser_id, win_len + i);
+                    i += 1;
+                    win
+                })
+                .collect();
+            all_winners.append(&mut winmap);
         }
     }
 
@@ -165,6 +250,7 @@ impl Sheet {
         &mut self,
         random_entries: &mut Vec<Entry>,
         all_sheet_entries: &Vec<Entry>,
+        all_winners: &mut Vec<Win>,
     ) -> Vec<Entry> {
         //another fn that assigns won against
         let random_clone = random_entries.clone().to_owned();
@@ -172,20 +258,20 @@ impl Sheet {
             .into_iter()
             .map(|mut entry| {
                 let new_entry = Entry {
-                    favorited: entry.check_if_favorite(all_sheet_entries),
+                    favorited: entry.check_if_favorite(all_sheet_entries, all_winners),
                     ..entry
                 };
                 new_entry
             })
             .collect()
     }
-    pub fn picker(&mut self, entries: &Vec<Entry>) {
+    pub fn picker(&mut self, entries: &Vec<Entry>, sheets: Vec<Sheet>, all_winners: &mut Vec<Win>) {
         let mut rng = thread_rng();
         let mut filtered_entries = self.get_entries(entries.clone());
         while filtered_entries.len() != 0 {
             let mut random_entries = filtered_entries.into_iter().choose_multiple(&mut rng, 20);
 
-            let picked_entries = self.display_choices(&mut random_entries, entries);
+            let picked_entries = self.display_choices(&mut random_entries, entries, all_winners);
 
             let cleaned = picked_entries
                 .into_iter()

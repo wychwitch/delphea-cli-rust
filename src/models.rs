@@ -1,6 +1,8 @@
 use crate::schema::entries;
 use crate::schema::sheets;
+use crate::schema::wins;
 use diesel::prelude::*;
+use std::iter::FromIterator;
 
 #[derive(Clone, Queryable)]
 pub struct Entry {
@@ -8,7 +10,6 @@ pub struct Entry {
     pub sheet_id: i32,
     pub name: String,
     pub color: String,
-    pub won_against: Vec<i32>,
     pub note: String,
     pub favorited: bool,
 }
@@ -20,7 +21,6 @@ pub struct NewEntry<'a> {
     pub sheet_id: &'a i32,
     pub name: &'a str,
     pub color: &'a str,
-    pub won_against: &'a Vec<i32>,
     pub note: &'a str,
     pub favorited: &'a bool,
 }
@@ -39,4 +39,18 @@ pub struct NewSheet<'a> {
     pub name: &'a str,
     pub color: &'a str,
     pub note: &'a str,
+}
+
+#[derive(Clone, Queryable)]
+pub struct Win {
+    pub id: i32,
+    pub winner_id: i32,
+    pub loser_id: i32,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = wins)]
+pub struct NewWin<'a> {
+    pub winner_id: &'a i32,
+    pub loser_id: &'a i32,
 }
