@@ -1,51 +1,59 @@
+pub mod models;
+pub mod schema;
+use self::models::*;
+use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
+use dotenvy::dotenv;
 use rand::{seq::IteratorRandom, thread_rng};
+use std::env;
 use std::{io, vec};
 use tui::{backend::CrosstermBackend, Terminal};
 
-const fn load_db() -> Database {
+use crate::models::Entry;
+use crate::models::Sheet;
+
+pub fn establish_connection() -> SqliteConnection {
+    dotenv().ok();
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    SqliteConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+}
+
+fn load_db() -> Database {
+    use self::schema::entries::dsl::*;
+
+    use self::schema::sheets::dsl::*;
+
+    let connection = &mut establish_connection();
+
+    let all_sheets = sheets
+        .load::<Sheet>(connection)
+        .expect("Error loading sheets");
+
+    let all_entries = entries
+        .load::<Entry>(connection)
+        .expect("Error loading sheets");
+
     Database {
-        entries: Vec::new(),
-        sheets: Vec::new(),
+        entries: all_entries,
+        sheets: all_sheets,
     }
 }
-static DB: Database = load_db();
 
 struct Database {
     entries: Vec<Entry>,
     sheets: Vec<Sheet>,
 }
 
-#[derive(Clone)]
-struct Entry {
-    id: i32,
-    sheet_id: i32,
-    name: String,
-    color: String,
-    all_sibling_entries: Vec<i32>,
-    won_against: Vec<i32>,
-    note: String,
-    favorited: bool,
-}
-
-#[derive(Clone)]
-struct Sheet {
-    id: i32,
-    name: String,
-    color: String,
-    note: String,
-}
-
 impl Entry {
-    pub fn new(sheet_id: i32, name: &str, color: &str, note: &str) -> Entry {
+    pub fn new(entries: Vec<Entry>, sheet_id: i32, name: &str, color: &str, note: &str) -> Entry {
         Entry {
-            id: DB.entries.len() as i32,
+            id: entries.len() as i32,
             sheet_id,
             name: name.to_string(),
             color: color.to_uppercase(),
             note: note.to_string(),
-            all_sibling_entries: Entry::entries_vec_to_id(&Sheet::get_entries_by_sheet_id(
-                sheet_id,
-            )),
             won_against: vec![],
             favorited: false,
         }
@@ -78,8 +86,8 @@ impl Entry {
         self.won_against.append(&mut save);
     }
 
-    pub fn id_to_entry(entry_id: i32) -> Entry {
-        DB.entries
+    pub fn id_to_entry(entries: Vec<Entry>, entry_id: i32) -> Entry {
+        entries
             .clone()
             .into_iter()
             .find(|entry| entry.id == entry_id)
@@ -110,9 +118,8 @@ impl Entry {
 }
 
 impl Sheet {
-    pub fn get_entries(&self) -> Vec<Entry> {
-        let filtered = DB
-            .entries
+    pub fn get_entries(&self, entries: Vec<Entry>) -> Vec<Entry> {
+        let filtered = entries
             .clone()
             .into_iter()
             .filter(|entry| entry.sheet_id == self.id)
@@ -121,17 +128,16 @@ impl Sheet {
         filtered
     }
 
-    pub fn get_sheet_by_id(sheet_id: i32) -> Sheet {
-        DB.sheets
+    pub fn get_sheet_by_id(sheets: Vec<Sheet>, sheet_id: i32) -> Sheet {
+        sheets
             .clone()
             .into_iter()
             .find(|sheet| sheet.id == sheet_id)
             .unwrap()
     }
 
-    pub fn get_entries_by_sheet_id(sheet_id: i32) -> Vec<Entry> {
-        let filtered = DB
-            .entries
+    pub fn get_entries_by_sheet_id(entries: Vec<Entry>, sheet_id: i32) -> Vec<Entry> {
+        let filtered = entries
             .clone()
             .into_iter()
             .filter(|entry| entry.sheet_id == sheet_id)
@@ -140,8 +146,8 @@ impl Sheet {
         filtered
     }
 
-    pub fn clear_all_favorites(&mut self) {
-        let all_sheet_entries = self.get_entries();
+    pub fn clear_all_favorites(&mut self, entries: Vec<Entry>) {
+        let all_sheet_entries = self.get_entries(entries);
         for mut entry in all_sheet_entries {
             entry.clear_wins();
         }
@@ -173,13 +179,13 @@ impl Sheet {
             })
             .collect()
     }
-    pub fn picker(&mut self) {
+    pub fn picker(&mut self, entries: &Vec<Entry>) {
         let mut rng = thread_rng();
-        let mut filtered_entries = self.get_entries();
+        let mut filtered_entries = self.get_entries(entries.clone());
         while filtered_entries.len() != 0 {
             let mut random_entries = filtered_entries.into_iter().choose_multiple(&mut rng, 20);
 
-            let picked_entries = self.display_choices(&mut random_entries, &DB.entries);
+            let picked_entries = self.display_choices(&mut random_entries, entries);
 
             let cleaned = picked_entries
                 .into_iter()
