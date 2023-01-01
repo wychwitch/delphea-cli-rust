@@ -21,12 +21,10 @@ pub fn establish_connection() -> SqliteConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-fn load_db() -> Database {
+fn load_db(connection: &mut SqliteConnection) -> Database {
     use self::schema::entries::dsl::*;
-
     use self::schema::sheets::dsl::*;
-
-    let connection = &mut establish_connection();
+    use self::schema::wins::dsl::*;
 
     let all_sheets = sheets
         .load::<Sheet>(connection)
@@ -36,15 +34,19 @@ fn load_db() -> Database {
         .load::<Entry>(connection)
         .expect("Error loading sheets");
 
+    let all_wins = wins.load::<Win>(connection).expect("Error loading sheets");
+
     Database {
-        entries: all_entries,
-        sheets: all_sheets,
+        all_entries,
+        all_sheets,
+        all_wins,
     }
 }
 
 struct Database {
-    entries: Vec<Entry>,
-    sheets: Vec<Sheet>,
+    all_entries: Vec<Entry>,
+    all_sheets: Vec<Sheet>,
+    all_wins: Vec<Win>,
 }
 
 impl Win {
@@ -298,6 +300,8 @@ enum DbReturnTypes {
 fn tui_testing() {}
 
 fn main() -> Result<(), io::Error> {
+    let connection = &mut establish_connection();
+    let mut db = load_db(connection);
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
