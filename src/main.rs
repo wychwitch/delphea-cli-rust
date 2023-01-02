@@ -1,14 +1,15 @@
 pub mod models;
 pub mod schema;
 use self::models::*;
-use bevy::prelude::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
 use rand::{seq::IteratorRandom, thread_rng};
-use std::env;
+use std::fmt::Display;
+use std::{env, fmt};
 use std::{io, vec};
-use tui::{backend::CrosstermBackend, Terminal};
+
+use youchoose;
 
 use crate::models::Entry;
 use crate::models::Sheet;
@@ -41,6 +42,12 @@ fn load_db(connection: &mut SqliteConnection) -> Database {
         all_entries,
         all_sheets,
         all_wins,
+    }
+}
+
+impl Display for Sheet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
     }
 }
 
@@ -191,6 +198,16 @@ impl Entry {
 }
 
 impl Sheet {
+    pub fn new(all_sheets: &Vec<Sheet>, name: &str, color: &str, note: &str) -> Sheet {
+        let next_index = all_sheets.len() as i32 + 1;
+        Sheet {
+            id: next_index,
+            name: name.into(),
+            color: color.into(),
+            note: note.into(),
+        }
+    }
+
     pub fn get_entries(&self, entries: Vec<Entry>) -> Vec<Entry> {
         let filtered = entries
             .clone()
@@ -286,20 +303,40 @@ impl Sheet {
     }
 }
 
-enum DbTypes {
-    Sheet,
-    Entry,
-}
-
 //fn save_db(all_entries: Vec<Entry>, all_sheets: Vec<Sheet>) {}
 
-fn tui_testing() {}
+fn handleround(db: &mut Database) {
+    let sheets_iter = db.all_sheets.iter();
+    let mut menu = youchoose::Menu::new(sheets_iter).preview(multiples);
+    let choice = menu.show();
+    let sheet = &db.all_sheets[choice[0]];
+    println!("{}", sheet)
+}
+
+fn multiples(sheet: &Sheet) -> String {
+    let mut buffer = String::new();
+    buffer.push_str(&format!(
+        "Sheet: {:?}\n{}",
+        sheet.name,
+        format!("\t - pretend like this is a {} item", sheet.color)
+    ));
+    buffer
+}
 
 fn main() {
     let connection = &mut establish_connection();
     let mut db = load_db(connection);
-    let stdout = io::stdout();
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-    App::new().run();
+
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Games", "red", ""));
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Books", "blue", ""));
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Projects", "green", ""));
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Study", "red", ""));
+
+    handleround(&mut db)
+
+    // `choice` is a Vec<usize> containing the chosen indices
 }

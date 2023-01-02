@@ -13,5 +13,10 @@ rand = "0.8.5"
 tui = "0.19"
 crossterm = "0.25"
 libsqlite3-sys = "0.25.2"
-bevy = "0.9.1"
 
+tokio = { version = "1", features = ["full"] }
+eyre = "0.6"
+
+log = "0.4" 
+tui-logger = { git = "https://github.com/gin66/tui-logger", rev = "3a3568e2464dddc2205e071234135998342d7f1d" }
+youchoose = "0.1.1"
