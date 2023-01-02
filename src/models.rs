@@ -2,7 +2,6 @@ use crate::schema::entries;
 use crate::schema::sheets;
 use crate::schema::wins;
 use diesel::prelude::*;
-use std::iter::FromIterator;
 
 #[derive(Clone, Queryable)]
 pub struct Entry {

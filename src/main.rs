@@ -1,6 +1,7 @@
 pub mod models;
 pub mod schema;
 use self::models::*;
+use bevy::prelude::*;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
@@ -290,20 +291,15 @@ enum DbTypes {
     Entry,
 }
 
-enum DbReturnTypes {
-    Sheets(Vec<Sheet>),
-    Entries(Vec<Entry>),
-}
-
 //fn save_db(all_entries: Vec<Entry>, all_sheets: Vec<Sheet>) {}
 
 fn tui_testing() {}
 
-fn main() -> Result<(), io::Error> {
+fn main() {
     let connection = &mut establish_connection();
     let mut db = load_db(connection);
     let stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-    Ok(())
+    App::new().run();
 }
