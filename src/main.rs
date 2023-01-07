@@ -1,26 +1,63 @@
 pub mod models;
 pub mod schema;
-use self::models::*;
-use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
-use dotenvy::dotenv;
+use console::Term;
+use console::{Emoji, Style};
+use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
+use enum_iterator::{all, Sequence};
+use indicatif::ProgressBar;
 use rand::{seq::IteratorRandom, thread_rng};
+use serde::{Deserialize, Serialize};
+use serde_json;
 use std::fmt::Display;
+use std::thread;
+use std::time::Duration;
 use std::{env, fmt};
 use std::{io, vec};
-
-use youchoose;
 
 use crate::models::Entry;
 use crate::models::Sheet;
 use crate::models::Win;
 
-pub fn establish_connection() -> SqliteConnection {
-    dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+#[derive(Debug, PartialEq, Sequence, Clone)]
+enum AvailableColors {
+    Pink = 224,
+    Yellow = 222,
+    Lavender = 182,
+    Orange = 173,
+    Ruddy = 167,
+    Bluish = 146,
+    Brown = 138,
+    Magenta = 132,
+    Green = 108,
+    Sky = 105,
+    Storm = 103,
+    Purple = 97,
+    Plum = 96,
+    NeonViolet = 91,
+    Ruby = 89,
+    Red = 1,
+}
+impl Display for AvailableColors {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AvailableColors::Pink => write!(f, "Pink"),
+            AvailableColors::Yellow => write!(f, "Yellow"),
+            AvailableColors::Lavender => write!(f, "Lavender"),
+            AvailableColors::Orange => write!(f, "Orange"),
+            AvailableColors::Ruddy => write!(f, "Ruddy"),
+            AvailableColors::Bluish => write!(f, "Bluish"),
+            AvailableColors::Brown => write!(f, "Brown"),
+            AvailableColors::Magenta => write!(f, "Magenta"),
+            AvailableColors::Green => write!(f, "Green"),
+            AvailableColors::Sky => write!(f, "Sky"),
+            AvailableColors::Storm => write!(f, "Storm"),
+            AvailableColors::Purple => write!(f, "Purple"),
+            AvailableColors::Plum => write!(f, "Plum"),
+            AvailableColors::NeonViolet => write!(f, "Neon Violet"),
+            AvailableColors::Ruby => write!(f, "Ruby"),
+            AvailableColors::Red => write!(f, "Red"),
+        }
+    }
 }
 
 fn load_db(connection: &mut SqliteConnection) -> Database {
@@ -43,6 +80,10 @@ fn load_db(connection: &mut SqliteConnection) -> Database {
         all_sheets,
         all_wins,
     }
+}
+
+impl Database {
+    pub fn save_db(&self) {}
 }
 
 impl Display for Sheet {
@@ -285,6 +326,12 @@ impl Sheet {
             })
             .collect()
     }
+    pub fn get_remaining_ids(&self, all_entries: Vec<Entry>) -> Vec<i32> {
+        let sheet_entries = self.get_entries(all_entries);
+        let unfaved: Vec<Entry> = sheet_entries.into_iter().filter(|e| !e.favorited).collect();
+        unfaved.iter().map(|e| e.id).collect()
+    }
+
     pub fn picker(&mut self, entries: &Vec<Entry>, sheets: Vec<Sheet>, all_winners: &mut Vec<Win>) {
         let mut rng = thread_rng();
         let mut filtered_entries = self.get_entries(entries.clone());
@@ -306,22 +353,90 @@ impl Sheet {
 //fn save_db(all_entries: Vec<Entry>, all_sheets: Vec<Sheet>) {}
 
 fn handleround(db: &mut Database) {
-    let sheets_iter = db.all_sheets.iter();
-    let mut menu = youchoose::Menu::new(sheets_iter).preview(multiples);
-    let choice = menu.show();
-    let sheet = &db.all_sheets[choice[0]];
-    println!("{}", sheet)
+    let sheets_iter = db.all_sheets.chunks(3);
+    let bar = ProgressBar::new(10);
+    let blue = Style::new().blue();
+    let red = Style::new().red();
+    let green = Style::new().green();
+    let mut picked_sheets: Vec<&Sheet> = vec![];
+    let mut picked_colors: Vec<usize> = vec![];
+    let mut colors = all::<AvailableColors>().collect::<Vec<_>>();
+
+    for sheet_vec in sheets_iter {
+        let selection = MultiSelect::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick your sheet (use space)")
+            .max_length(3)
+            .items(sheet_vec)
+            .interact()
+            .unwrap();
+        for i in selection {
+            picked_sheets.push(&db.all_sheets[i])
+        }
+    }
+
+    let selection = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt("Pick your sheet (use space)")
+        .max_length(3)
+        .items(&colors)
+        .interact()
+        .unwrap();
+
+    for sheet in picked_sheets {
+        let color = match &sheet.color as &str {
+            "green" => &green,
+            "red" => &red,
+            "blue" => &blue,
+            _ => &blue,
+        };
+        println!("{} {}", color.apply_to(sheet), Emoji("⭐", "*"));
+    }
+    for color in colors {
+        let fmt_color = Style::new().color256(color.clone() as u8);
+
+        println!("{}", fmt_color.apply_to(color.clone()));
+    }
 }
 
-fn multiples(sheet: &Sheet) -> String {
-    let mut buffer = String::new();
-    buffer.push_str(&format!(
-        "Sheet: {:?}\n{}",
-        sheet.name,
-        format!("\t - pretend like this is a {} item", sheet.color)
-    ));
-    buffer
+trait InteractiveCreate {
+    fn interactive_create_root(&self) {
+        let colors = all::<AvailableColors>().collect::<Vec<_>>();
+
+        let name: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick your sheet (use space)")
+            .interact()
+            .unwrap();
+        let id: i32 = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick your sheet (use space)")
+            .interact()
+            .unwrap();
+        let color: usize = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick your sheet (use space)")
+            .items(&colors)
+            .interact()
+            .unwrap();
+        let note: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick your sheet (use space)")
+            .interact()
+            .unwrap();
+    }
 }
+
+trait InteractiveEdit {
+    fn interactive_edit(&self) {
+        //todo
+    }
+}
+
+trait InteractiveDelete {
+    fn interactive_delete(&self) {
+        //todo
+    }
+}
+
+impl InteractiveCreate for Entry {}
+
+fn main_menu(db: &mut Database) {}
+fn handle_create(db: &mut Database) {}
 
 fn main() {
     let connection = &mut establish_connection();
@@ -336,7 +451,19 @@ fn main() {
     db.all_sheets
         .push(Sheet::new(&db.all_sheets, "Study", "red", ""));
 
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Games", "red", ""));
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Books", "blue", ""));
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Projects", "green", ""));
+    db.all_sheets
+        .push(Sheet::new(&db.all_sheets, "Study", "red", ""));
+
     handleround(&mut db)
+    //handle_create(&mut db);
 
     // `choice` is a Vec<usize> containing the chosen indices
+
+    //
 }

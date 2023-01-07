@@ -6,9 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel = { version = "2.0.0", features = ["sqlite", "numeric"] }
 dotenvy = "0.15"
-rusqlite = { version = "0.28.0", features = ["bundled"] }
 rand = "0.8.5"
 tui = "0.19"
 crossterm = "0.25"
@@ -19,4 +17,12 @@ eyre = "0.6"
 
 log = "0.4" 
 tui-logger = { git = "https://github.com/gin66/tui-logger", rev = "3a3568e2464dddc2205e071234135998342d7f1d" }
-youchoose = "0.1.1"
+
+dialoguer = "0.10.2"
+indicatif = "0.17.2"
+console = "0.15.4"
+
+divrem = "1.0.0"
+enum-iterator = "1.2.0"
+serde = { version = "1.0.152", features = ["derive"] }
+serde_json = "1.0.91"
