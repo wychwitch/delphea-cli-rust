@@ -8,7 +8,6 @@ use std::fs::File;
 use std::vec;
 
 fn handle_round(mut db: Database) {
-    let mut rng = thread_rng();
     let sheet_idx = db.pick_sheet_idx();
     let mut sheet = &mut db.all_sheets[sheet_idx];
     sheet.picker(&db.all_entries)
