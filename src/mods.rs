@@ -1,8 +1,8 @@
-use dialoguer::{theme::ColorfulTheme, Input, Select};
+use console::Style;
+use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
 use enum_iterator::{all, Sequence};
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::fmt::{self, Display};
 
 #[derive(Debug, PartialEq, Sequence, Clone)]
@@ -24,25 +24,6 @@ pub enum AvailableColors {
     Ruby = 89,
     Red = 1,
 }
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Entry {
-    pub id: i32,
-    pub sheet_id: i32,
-    pub name: String,
-    pub color: usize,
-    pub note: String,
-    pub favorited: bool,
-    pub won_against: Vec<i32>,
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Sheet {
-    pub id: i32,
-    pub name: String,
-    pub color: usize,
-    pub note: String,
-    pub all_entry_ids: Vec<i32>,
-}
 
 #[derive(Serialize, Deserialize)]
 pub struct Database {
@@ -50,30 +31,60 @@ pub struct Database {
     pub all_sheets: Vec<Sheet>,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Entry {
+    pub id: i32,
+    pub sheet_id: i32,
+    pub name: String,
+    pub color: u8,
+    pub note: String,
+    pub rank: i32,
+    pub lost_against: Vec<i32>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Sheet {
+    pub id: i32,
+    pub name: String,
+    pub color: u8,
+    pub note: String,
+    pub all_entry_ids: Vec<i32>,
+}
+
 //
 //Implementations
 //
 
-impl Display for Sheet {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)
-    }
-}
-
-impl Database {
-    pub fn save(&self) {}
-}
-
 impl Entry {
-    pub fn new(entries: Vec<Entry>, sheet_id: i32, name: &str, color: usize, note: &str) -> Entry {
+    pub fn new(entries: Vec<Entry>, sheet_id: i32, name: &str, color: u8, note: &str) -> Entry {
         Entry {
             id: entries.len() as i32,
             sheet_id,
             name: name.to_string(),
             color,
             note: note.to_string(),
-            favorited: false,
-            won_against: vec![],
+            rank: 0,
+            lost_against: vec![],
+        }
+    }
+    pub fn interactive_create(&self, sheets: &Vec<Sheet>) -> Entry {
+        let (name, id, color, note) = self.interactive_create_root();
+
+        let sheet_i = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick your sheet (use space)")
+            .items(&sheets)
+            .interact()
+            .unwrap();
+
+        let sheet_id = sheets[sheet_i].id;
+        Entry {
+            id,
+            sheet_id,
+            name,
+            color,
+            note,
+            rank: 0,
+            lost_against: vec![],
         }
     }
 
@@ -85,29 +96,29 @@ impl Entry {
             .to_owned()
     }
 
-    pub fn track_wins(&mut self, losers: Vec<Entry>) {
-        let mut picked: Vec<i32> = losers.into_iter().map(|loser| loser.id).collect();
-        self.won_against.append(&mut picked);
+    pub fn track_losses(&mut self, winners: Vec<Entry>) {
+        let mut picked: Vec<i32> = winners.into_iter().map(|loser| loser.id).collect();
+        self.lost_against.append(&mut picked);
     }
 
-    pub fn clear_wins(&mut self) {
-        self.won_against = vec![];
+    pub fn clear_losses(&mut self) {
+        self.lost_against = vec![];
     }
 
-    pub fn won_against(&self) -> &Vec<i32> {
-        &self.won_against
+    pub fn lost_against(&self) -> &Vec<i32> {
+        &self.lost_against
     }
 
     pub fn clear_removed_ids(&mut self, rem_loser_ids: Vec<i32>) {
         let mut affected_indexes: Vec<usize> = vec![];
 
-        for (i, entry_id) in self.won_against.iter().enumerate() {
+        for (i, entry_id) in self.lost_against.iter().enumerate() {
             if rem_loser_ids.contains(entry_id) {
                 affected_indexes.push(i);
             }
         }
         for i in affected_indexes.iter().rev() {
-            self.won_against.remove(*i);
+            self.lost_against.remove(*i);
         }
     }
 
@@ -128,15 +139,14 @@ impl Entry {
     }
 
     pub fn check_if_favorite(&mut self, all_sheet_entries: &Vec<Entry>) -> bool {
-        let filtered_entries: Vec<&Entry> = all_sheet_entries
-            .into_iter()
-            .filter(|entry| !entry.favorited)
+        let full_entries: Vec<&Entry> = all_sheet_entries
+            .iter()
+            .filter(|e| self.lost_against.contains(&e.id))
             .collect();
 
-        if filtered_entries
-            .into_iter()
-            .all(|entry| self.won_against.contains(&entry.id))
-        {
+        if full_entries.iter().all(|e| e.rank != 0) {
+            let ranks = full_entries.iter().map(|e| e.rank);
+            self.rank = ranks.max().unwrap();
             true
         } else {
             false
@@ -145,7 +155,7 @@ impl Entry {
 }
 
 impl Sheet {
-    pub fn new(all_sheets: &Vec<Sheet>, name: &str, color: usize, note: &str) -> Sheet {
+    pub fn new(all_sheets: &Vec<Sheet>, name: &str, color: u8, note: &str) -> Sheet {
         let next_index = all_sheets.len() as i32 + 1;
         Sheet {
             id: next_index,
@@ -162,6 +172,19 @@ impl Sheet {
             .filter(|entry| entry.sheet_id == self.id)
             .collect::<Vec<&Entry>>();
         filtered
+    }
+
+    pub fn get_mut_entries<'a>(&'a self, all_entries: &'a mut Vec<Entry>) -> Vec<&mut Entry> {
+        let filtered: Vec<&mut Entry> = all_entries
+            .iter_mut()
+            .filter(|entry| entry.sheet_id == self.id)
+            .collect::<Vec<&mut Entry>>();
+        filtered
+    }
+
+    pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
+        let (name, id, color, note) = self.interactive_create_root();
+        Sheet::new(all_sheets, &name, color, &note)
     }
 
     pub fn get_sheet_by_id(sheets: Vec<Sheet>, sheet_id: i32) -> Sheet {
@@ -183,33 +206,66 @@ impl Sheet {
     }
 
     pub fn clear_all_favorites(&mut self, all_entries: &mut Vec<Entry>) {
-        let mut entries = self.get_entries(all_entries);
+        let mut entries: Vec<&mut Entry> = self.get_mut_entries(all_entries);
 
-        for entry in entries {
-            entry.clear_wins();
-        }
-    }
-
-    pub fn handle_choices(winners: &mut Vec<Entry>, losers: &Vec<Entry>) {
-        //have this actually update the choices later, rn it just sets the first element to be picked
-
-        for winner in winners {
-            let mut loser_ids = Entry::get_entries_as_ids(losers);
-
-            winner.won_against.append(&mut loser_ids)
+        for i in 0..entries.len() {
+            entries[i].clear_losses();
+            entries[i].rank = 0;
         }
     }
 
     pub fn picker(&mut self, entries: &Vec<Entry>) {
         let mut rng = thread_rng();
         let mut filtered_entries = self.get_entries(entries);
-        while entries.iter().all(|e| !e.favorited) {
+        filtered_entries.shuffle(&mut rng);
+        while entries.iter().all(|e| e.rank == 0) {
             let mut picked_entries: Vec<&Entry> = vec![];
+            let start = 0;
+            let end = 20;
+            let mut num_mod = 0;
 
             while picked_entries.len() != filtered_entries.len() {
-                let mut random_entries = filtered_entries.choose_multiple(&mut rng, 20);
+                let slices = if end + num_mod <= filtered_entries.len() {
+                    &filtered_entries[(start + num_mod)..(end + num_mod)]
+                } else {
+                    &filtered_entries[(start + num_mod)..filtered_entries.len()]
+                };
+
+                let selection = mult_menu_creation(&slices, "entry");
+                let winner_ids: Vec<i32> = selection
+                    .iter()
+                    .map(|s| {
+                        let entry: &Entry = filtered_entries[*s];
+                        entry.id
+                    })
+                    .collect();
+                //todo add winner ids to everyone else's lost against
+                //todo shift the index by adding 20 to num_mod
+                //todo fix possibility
             }
         }
+    }
+}
+
+impl Display for Sheet {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Display for Entry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let style = Style::new().color256(self.color);
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Database {
+    pub fn save(&self) {}
+
+    pub fn pick_sheet_idx(&self) -> usize {
+        let sheet_id = menu_creation(&self.all_sheets, "sheet");
+        sheet_id
     }
 }
 
@@ -236,46 +292,14 @@ impl Display for AvailableColors {
     }
 }
 
-impl InteractiveCreate for Entry {
-    fn interactive_create(&self, sheets: &Vec<Sheet>) -> Entry {
-        let (name, id, color, note) = self.interactive_create_root();
-
-        let sheet_i = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your sheet (use space)")
-            .items(&sheets)
-            .interact()
-            .unwrap();
-
-        let sheet_id = sheets[sheet_i].id;
-        Entry {
-            id,
-            sheet_id,
-            name,
-            color,
-            note,
-            favorited: false,
-            won_against: vec![],
-        }
-    }
-}
-
-impl InteractiveCreate for Sheet {
-    fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
-        let (name, id, color, note) = self.interactive_create_root();
-        Sheet::new(all_sheets, &name, color, &note)
-    }
-}
 //
 // Traits
 //
+
+impl InteractiveCreate for Entry {}
+impl InteractiveCreate for Sheet {}
 trait InteractiveCreate {
-    fn interactive_create(&self, sheets: &Vec<Sheet>) -> Self
-    where
-        Self: Sized,
-    {
-        Self
-    }
-    fn interactive_create_root(&self) -> (String, i32, usize, String) {
+    fn interactive_create_root(&self) -> (String, i32, u8, String) {
         let colors = all::<AvailableColors>().collect::<Vec<_>>();
 
         let name: String = Input::with_theme(&ColorfulTheme::default())
@@ -295,7 +319,7 @@ trait InteractiveCreate {
             .with_prompt("Pick your sheet (use space)")
             .interact()
             .unwrap();
-        (name, id, color, note)
+        (name, id, color.try_into().unwrap(), note)
     }
 }
 
@@ -309,4 +333,28 @@ trait InteractiveDelete {
     fn interactive_delete_root(&self) {
         //todo
     }
+}
+
+///
+/// helper
+///
+
+fn menu_creation<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
+    let selection_i: usize = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!("Pick your {msg} (use space)"))
+        .items(&choices)
+        .interact()
+        .unwrap();
+
+    selection_i
+}
+
+fn mult_menu_creation<T: std::fmt::Display>(choices: &[T], msg: &str) -> Vec<usize> {
+    let selection_i = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!("Pick your {msg} (use space)"))
+        .items(&choices)
+        .interact()
+        .unwrap();
+
+    selection_i
 }

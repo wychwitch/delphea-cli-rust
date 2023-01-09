@@ -1,32 +1,35 @@
-pub mod models;
-use console::Term;
-use console::{Emoji, Style};
-use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
-use enum_iterator::all;
-use indicatif::ProgressBar;
-use models::{AvailableColors, Database};
-use rand::{seq::IteratorRandom, thread_rng};
-use std::thread;
-use std::time::Duration;
-use std::{env, fmt};
-use std::{io, vec};
+pub mod mods;
 
-use crate::models::Entry;
-use crate::models::Sheet;
+use mods::{AvailableColors, Database, Sheet};
 
-fn handleround(db: &mut Database) {
-    let dbgSheet = &mut db.all_sheets[0];
-    dbgSheet.picker(&mut db.all_entries)
+use rand::thread_rng;
+use std::fs::File;
+
+use std::vec;
+
+fn handle_round(mut db: Database) {
+    let mut rng = thread_rng();
+    let sheet_idx = db.pick_sheet_idx();
+    let mut sheet = &mut db.all_sheets[sheet_idx];
+    sheet.picker(&db.all_entries)
 }
 
 fn main_menu(db: &mut Database) {}
 fn handle_create(db: &mut Database) {}
 
 fn load_db() -> Database {
-    Database {
-        all_entries: vec![],
-        all_sheets: vec![],
-    }
+    let db = match File::open("~/.delphea.json") {
+        Ok(file) => {
+            let db: Database =
+                serde_json::from_reader(file).expect("error while reading or parsing");
+            db
+        }
+        Err(_) => Database {
+            all_entries: vec![],
+            all_sheets: vec![],
+        },
+    };
+    db
 }
 
 fn main() {
@@ -35,52 +38,52 @@ fn main() {
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Games",
-        AvailableColors::Green as usize,
-        "",
+        AvailableColors::Green as u8,
+        "note!",
     ));
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Books",
-        AvailableColors::Green as usize,
+        AvailableColors::Green as u8,
         "",
     ));
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Projects",
-        AvailableColors::Green as usize,
+        AvailableColors::Green as u8,
         "",
     ));
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Study",
-        AvailableColors::Pink as usize,
+        AvailableColors::Pink as u8,
         "",
     ));
 
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Games",
-        AvailableColors::Lavender as usize,
+        AvailableColors::Lavender as u8,
         "",
     ));
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Books",
-        AvailableColors::Magenta as usize,
+        AvailableColors::Magenta as u8,
         "",
     ));
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Projects",
-        AvailableColors::Green as usize,
+        AvailableColors::Green as u8,
         "",
     ));
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Study",
-        AvailableColors::Orange as usize,
+        AvailableColors::Orange as u8,
         "",
     ));
 
-    handleround(&mut db)
+    handle_round(db)
 }
