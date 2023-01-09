@@ -324,14 +324,16 @@ trait InteractiveCreate {
 }
 
 trait InteractiveEdit {
+    //for sheet and entry
     fn interactive_edit_root(&self) {
-        //todo
+        //todo finish thisd
     }
 }
 
 trait InteractiveDelete {
+    //for db and sheet
     fn interactive_delete_root(&self) {
-        //todo
+        //todo finish this
     }
 }
 
