@@ -96,9 +96,8 @@ impl Entry {
             .to_owned()
     }
 
-    pub fn track_losses(&mut self, winners: Vec<Entry>) {
-        let mut picked: Vec<i32> = winners.into_iter().map(|loser| loser.id).collect();
-        self.lost_against.append(&mut picked);
+    pub fn track_losses(&mut self, mut winner_ids: Vec<i32>) {
+        self.lost_against.append(&mut winner_ids);
     }
 
     pub fn clear_losses(&mut self) {
@@ -174,14 +173,6 @@ impl Sheet {
         filtered
     }
 
-    pub fn get_mut_entries<'a>(&'a self, all_entries: &'a mut Vec<Entry>) -> Vec<&mut Entry> {
-        let filtered: Vec<&mut Entry> = all_entries
-            .iter_mut()
-            .filter(|entry| entry.sheet_id == self.id)
-            .collect::<Vec<&mut Entry>>();
-        filtered
-    }
-
     pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
         let (name, id, color, note) = self.interactive_create_root();
         Sheet::new(all_sheets, &name, color, &note)
@@ -206,7 +197,11 @@ impl Sheet {
     }
 
     pub fn clear_all_favorites(&mut self, all_entries: &mut Vec<Entry>) {
-        let mut entries: Vec<&mut Entry> = self.get_mut_entries(all_entries);
+        let mut binding = all_entries
+            .iter_mut()
+            .filter(|entry| entry.sheet_id == self.id)
+            .collect::<Vec<&mut Entry>>();
+        let mut entries: &mut [&mut Entry] = binding.as_mut_slice();
 
         for i in 0..entries.len() {
             entries[i].clear_losses();
@@ -214,35 +209,27 @@ impl Sheet {
         }
     }
 
-    pub fn picker(&mut self, entries: &Vec<Entry>) {
+    pub fn picker(&mut self, all_entries: &mut Vec<Entry>) {
         let mut rng = thread_rng();
-        let mut filtered_entries = self.get_entries(entries);
-        filtered_entries.shuffle(&mut rng);
-        while entries.iter().all(|e| e.rank == 0) {
-            let mut picked_entries: Vec<&Entry> = vec![];
-            let start = 0;
-            let end = 20;
-            let mut num_mod = 0;
+        let mut binding = all_entries
+            .iter_mut()
+            .filter(|entry| entry.sheet_id == self.id)
+            .collect::<Vec<&mut Entry>>();
+        let sheet_entries = binding.as_mut_slice();
+        let mut picked: Vec<i32> = vec![];
+        sheet_entries.shuffle(&mut rng);
 
-            while picked_entries.len() != filtered_entries.len() {
-                let slices = if end + num_mod <= filtered_entries.len() {
-                    &filtered_entries[(start + num_mod)..(end + num_mod)]
-                } else {
-                    &filtered_entries[(start + num_mod)..filtered_entries.len()]
-                };
+        let start = 0;
+        let end = 20;
+        let mut num_mod = 0;
 
-                let selection = mult_menu_creation(&slices, "entry");
-                let winner_ids: Vec<i32> = selection
-                    .iter()
-                    .map(|s| {
-                        let entry: &Entry = filtered_entries[*s];
-                        entry.id
-                    })
-                    .collect();
-                //todo add winner ids to everyone else's lost against
-                //todo shift the index by adding 20 to num_mod
-                //todo fix possibility
-            }
+        while &picked.len() != &sheet_entries.len() {
+            let selection = mult_menu_creation(
+                &sheet_entries[(start + num_mod)..(end + num_mod)],
+                "entries",
+            );
+
+            let winner_ids: Vec<i32> = 
         }
     }
 }

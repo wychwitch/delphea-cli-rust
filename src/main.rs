@@ -10,7 +10,7 @@ use std::vec;
 fn handle_round(mut db: Database) {
     let sheet_idx = db.pick_sheet_idx();
     let mut sheet = &mut db.all_sheets[sheet_idx];
-    sheet.picker(&db.all_entries)
+    sheet.picker(&mut db.all_entries)
 }
 
 fn main_menu(db: &mut Database) {}
