@@ -211,12 +211,13 @@ impl Sheet {
 
     pub fn picker(&mut self, all_entries: &mut Vec<Entry>) {
         let mut rng = thread_rng();
+
         let mut binding = all_entries
             .iter_mut()
             .filter(|entry| entry.sheet_id == self.id)
             .collect::<Vec<&mut Entry>>();
         let sheet_entries = binding.as_mut_slice();
-        let mut picked: Vec<i32> = vec![];
+        let picked: Vec<i32> = vec![];
         sheet_entries.shuffle(&mut rng);
 
         let start = 0;
@@ -224,12 +225,21 @@ impl Sheet {
         let mut num_mod = 0;
 
         while &picked.len() != &sheet_entries.len() {
-            let selection = mult_menu_creation(
-                &sheet_entries[(start + num_mod)..(end + num_mod)],
-                "entries",
-            );
+            let entry_slice = &sheet_entries[(start + num_mod)..(end + num_mod)];
+            let selection: Vec<usize> = mult_menu_creation(&entry_slice, "entries");
 
-            let winner_ids: Vec<i32> = 
+            let winner_ids: Vec<i32> = selection.into_iter().map(|s| sheet_entries[s].id).collect();
+
+            let entry_slice = &mut sheet_entries[(start + num_mod)..(end + num_mod)];
+
+            for i in 0..entry_slice.len() {
+                let entry = &mut entry_slice[i];
+
+                if !winner_ids.contains(&entry.id) {
+                    let mut winner_ids_clone: Vec<i32> = winner_ids.to_vec();
+                    entry.lost_against.append(&mut winner_ids_clone);
+                }
+            }
         }
     }
 }
