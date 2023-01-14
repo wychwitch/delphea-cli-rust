@@ -1,8 +1,9 @@
 pub mod mods;
 
-use mods::{AvailableColors, Database, Sheet};
-
+use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
+use mods::{AvailableColors, Database, Entry, Sheet};
 use rand::thread_rng;
+use std::cmp::Ordering;
 use std::fs::File;
 
 use std::vec;
@@ -30,6 +31,57 @@ fn load_db() -> Database {
         },
     };
     db
+}
+
+fn picker_setup(entries: &mut Vec<Entry>) {
+    entries.sort_by(|a, b| {
+        if a.get_lost_len() > b.get_lost_len() {
+            Ordering::Less
+        } else if a.get_lost_len() == b.get_lost_len() {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
+    });
+
+    let mut unique_losses: Vec<usize> = entries.iter().map(|e| e.get_lost_len()).collect();
+
+    unique_losses.dedup();
+
+    let mut grouped_entries: Vec<Vec<&Entry>> = vec![];
+
+    for loss_len in unique_losses {
+        let mut grouped_entry: Vec<&Entry> = vec![];
+        for i in 0..entries.len() {
+            if entries[i].get_lost_len() == loss_len {
+                grouped_entry.push(entries.get(i).unwrap())
+            }
+        }
+        grouped_entries.push(grouped_entry);
+    }
+}
+
+fn picker(entries: &[&Entry]) {
+    //if the entries are too long, chunk it and recurse
+    if entries.len() > 10 {
+        let chunks = entries.chunks(10);
+        for chunk in chunks {
+            picker(chunk)
+        }
+    } else {
+        let selection: Vec<usize> = mult_menu_creation(entries, "entries");
+        let winner_ids: Vec<i32> = selection.into_iter().map(|s| entries[s].id).collect();
+    }
+}
+
+fn mult_menu_creation<T: std::fmt::Display>(choices: &[T], msg: &str) -> Vec<usize> {
+    let selection_i = MultiSelect::with_theme(&ColorfulTheme::default())
+        .with_prompt(format!("Pick your {msg} (use space)"))
+        .items(&choices)
+        .interact()
+        .unwrap();
+
+    selection_i
 }
 
 fn main() {

@@ -31,7 +31,7 @@ pub struct Database {
     pub all_sheets: Vec<Sheet>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entry {
     pub id: i32,
     pub sheet_id: i32,
@@ -56,6 +56,9 @@ pub struct Sheet {
 //
 
 impl Entry {
+    pub fn get_lost_len(&self) -> usize {
+        self.lost_against.len()
+    }
     pub fn new(
         entries: &mut Vec<Entry>,
         sheet_id: i32,
@@ -367,7 +370,7 @@ trait InteractiveDelete {
 /// helper
 ///
 
-fn menu_creation<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
+pub fn menu_creation<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
     let selection_i: usize = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(format!("Pick your {msg} (use space)"))
         .items(&choices)
@@ -377,7 +380,7 @@ fn menu_creation<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
     selection_i
 }
 
-fn mult_menu_creation<T: std::fmt::Display>(choices: &[T], msg: &str) -> Vec<usize> {
+pub fn mult_menu_creation<T: std::fmt::Display>(choices: &[T], msg: &str) -> Vec<usize> {
     let selection_i = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt(format!("Pick your {msg} (use space)"))
         .items(&choices)
