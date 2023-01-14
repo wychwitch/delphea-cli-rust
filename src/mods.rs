@@ -56,7 +56,13 @@ pub struct Sheet {
 //
 
 impl Entry {
-    pub fn new(entries: Vec<Entry>, sheet_id: i32, name: &str, color: u8, note: &str) -> Entry {
+    pub fn new(
+        entries: &mut Vec<Entry>,
+        sheet_id: i32,
+        name: &str,
+        color: u8,
+        note: &str,
+    ) -> Entry {
         Entry {
             id: entries.len() as i32,
             sheet_id,
@@ -154,6 +160,19 @@ impl Entry {
 }
 
 impl Sheet {
+    pub fn debug_add_entries(&mut self, entries: &mut Vec<Entry>) {
+        for i in 1..=80 {
+            let entry = Entry::new(
+                entries,
+                self.id,
+                &format!("Entry {}", i),
+                AvailableColors::Lavender as u8,
+                "",
+            );
+            entries.push(entry);
+        }
+    }
+
     pub fn new(all_sheets: &Vec<Sheet>, name: &str, color: u8, note: &str) -> Sheet {
         let next_index = all_sheets.len() as i32 + 1;
         Sheet {
@@ -174,7 +193,7 @@ impl Sheet {
     }
 
     pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
-        let (name, id, color, note) = self.interactive_create_root();
+        let (name, _, color, note) = self.interactive_create_root();
         Sheet::new(all_sheets, &name, color, &note)
     }
 
@@ -216,21 +235,30 @@ impl Sheet {
             .iter_mut()
             .filter(|entry| entry.sheet_id == self.id)
             .collect::<Vec<&mut Entry>>();
+
         let sheet_entries = binding.as_mut_slice();
-        let picked: Vec<i32> = vec![];
-        sheet_entries.shuffle(&mut rng);
 
         let start = 0;
-        let end = 20;
+        let end = 10;
         let mut num_mod = 0;
+        let mut quit = false;
 
-        while &picked.len() != &sheet_entries.len() {
+        while sheet_entries.iter().all(|e| e.rank != 0) || !quit {
+            sheet_entries.shuffle(&mut rng);
             let entry_slice = &sheet_entries[(start + num_mod)..(end + num_mod)];
             let selection: Vec<usize> = mult_menu_creation(&entry_slice, "entries");
 
             let winner_ids: Vec<i32> = selection.into_iter().map(|s| sheet_entries[s].id).collect();
 
-            let entry_slice = &mut sheet_entries[(start + num_mod)..(end + num_mod)];
+            let entry_slice;
+
+            let sheet_len = &sheet_entries.len();
+
+            if end + num_mod <= sheet_entries.len() {
+                entry_slice = &mut sheet_entries[(start + num_mod)..(end + num_mod)];
+            } else {
+                entry_slice = &mut sheet_entries[(start + num_mod)..*sheet_len];
+            }
 
             for i in 0..entry_slice.len() {
                 let entry = &mut entry_slice[i];
@@ -240,6 +268,7 @@ impl Sheet {
                     entry.lost_against.append(&mut winner_ids_clone);
                 }
             }
+            num_mod += 10;
         }
     }
 }
@@ -253,7 +282,7 @@ impl Display for Sheet {
 impl Display for Entry {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let style = Style::new().color256(self.color);
-        write!(f, "{}", self.name)
+        write!(f, "{}", style.apply_to(&self.name))
     }
 }
 
