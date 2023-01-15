@@ -31,7 +31,7 @@ pub struct Database {
     pub all_sheets: Vec<Sheet>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entry {
     pub id: i32,
     pub sheet_id: i32,
@@ -42,7 +42,7 @@ pub struct Entry {
     pub lost_against: Vec<i32>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sheet {
     pub id: i32,
     pub name: String,

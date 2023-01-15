@@ -44,20 +44,29 @@ fn picker_setup(entries: &mut Vec<Entry>) {
         }
     });
 
-    let mut unique_losses: Vec<usize> = entries.iter().map(|e| e.get_lost_len()).collect();
+    let mut unique_losses: Vec<usize> = entries.iter_mut().map(|e| e.get_lost_len()).collect();
 
     unique_losses.dedup();
 
-    let mut grouped_entries: Vec<Vec<&Entry>> = vec![];
+    let mut grouped_entries: Vec<Vec<usize>> = vec![];
 
     for loss_len in unique_losses {
-        let mut grouped_entry: Vec<&Entry> = vec![];
-        for i in 0..entries.len() {
-            if entries[i].get_lost_len() == loss_len {
-                grouped_entry.push(entries.get(i).unwrap())
+        let mut grouped_entry_ids: Vec<usize> = vec![];
+        let len1 = entries.len();
+        for (i, entry) in entries.iter().enumerate(){
+            if entry.get_lost_len() == loss_len{
+            grouped_entry_ids.push(i);
             }
         }
-        grouped_entries.push(grouped_entry);
+        grouped_entries.push(grouped_entry_ids);
+    }
+    for i in 0..grouped_entries.len(){
+        let mut entr_vec: Vec<&mut Entry>;
+        for y in  0..grouped_entries[i].len(){
+            entr_vec.push(&mut entries[grouped_entries[i][y]])
+        }
+        let mut entr = entr_vec.as_slice();
+        picker(&mut entr);
     }
 }
 
