@@ -61,16 +61,25 @@ fn picker_setup(entries: &mut Vec<Entry>) {
     }
 }
 
-fn picker(entries: &[&Entry]) {
+fn picker(entries: &mut [&mut Entry]) {
     //if the entries are too long, chunk it and recurse
     if entries.len() > 10 {
-        let chunks = entries.chunks(10);
-        for chunk in chunks {
+        let mut chunks = entries.chunks_mut(10);
+        for chunk in &mut chunks {
             picker(chunk)
         }
     } else {
         let selection: Vec<usize> = mult_menu_creation(entries, "entries");
         let winner_ids: Vec<i32> = selection.into_iter().map(|s| entries[s].id).collect();
+        let mut losers: Vec<&mut &mut Entry> = entries
+            .iter_mut()
+            .filter(|e| !winner_ids.contains(&e.id))
+            .collect();
+        for i in 0..losers.len() {
+            let mut winner_vec = winner_ids.clone();
+            let mut loser = &mut losers[i];
+            loser.lost_against.append(&mut winner_vec);
+        }
     }
 }
 
