@@ -195,6 +195,20 @@ impl Sheet {
         filtered
     }
 
+    pub fn get_entry_indices(&self, all_entries: &Vec<Entry>) -> Vec<usize> {
+        let filtered: Vec<usize> = all_entries
+            .iter()
+            .enumerate()
+            .filter(|&(_, entry)| {
+                entry.sheet_id == self.id
+
+            })
+            .map(|(i,_)| i)
+            .collect::<Vec<usize>>();
+        filtered
+    }
+
+
     pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
         let (name, _, color, note) = self.interactive_create_root();
         Sheet::new(all_sheets, &name, color, &note)
