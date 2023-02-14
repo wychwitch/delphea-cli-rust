@@ -193,22 +193,8 @@ impl Sheet {
         }
     }
 
-    pub fn get_entries<'a>(&'a self, all_entries: &'a Vec<Entry>) -> Vec<&Entry> {
-        let filtered: Vec<&Entry> = all_entries
-            .iter()
-            .filter(|entry| entry.sheet_id == self.id)
-            .collect::<Vec<&Entry>>();
-        filtered
-    }
-
-    pub fn get_entry_indices(&self, all_entries: &Vec<Entry>) -> Vec<usize> {
-        let filtered: Vec<usize> = all_entries
-            .iter()
-            .enumerate()
-            .filter(|&(_, entry)| entry.sheet_id == self.id)
-            .map(|(i, _)| i)
-            .collect::<Vec<usize>>();
-        filtered
+    pub fn get_entries(&self) -> Vec<Entry> {
+        self.entries
     }
 
     pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
@@ -234,16 +220,10 @@ impl Sheet {
         filtered
     }
 
-    pub fn clear_all_favorites(&mut self, all_entries: &mut Vec<Entry>) {
-        let mut binding = all_entries
-            .iter_mut()
-            .filter(|entry| entry.sheet_id == self.id)
-            .collect::<Vec<&mut Entry>>();
-        let mut entries: &mut [&mut Entry] = binding.as_mut_slice();
-
-        for i in 0..entries.len() {
-            entries[i].clear_losses();
-            entries[i].rank = 0;
+    pub fn clear_all_favorites(&mut self) {
+        for i in 0..self.entries.len() {
+            self.entries[i].clear_losses();
+            self.entries[i].rank = 0;
         }
     }
 

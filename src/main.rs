@@ -34,21 +34,19 @@ fn load_db() -> Database {
     db
 }
 
-fn picker_setup(entries: Vec<Entry>, indices: Vec<usize>) -> Vec<Entry> {
-    let mut sheet_entries: Vec<&mut Entry> = indices.into_iter().map(|i| &mut entries[i]).collect();
-
+fn picker_setup(sheet_entries: Vec<Entry>) -> Vec<Entry> {
     //fix this so it returns ALL entries or at least overwrites the sheet entries- actually yes do that
-    picker(&mut sheet_entries.as_mut_slice())
+    let mut sheet_slices = sheet_entries.as_mut_slice();
+    picker(sheet_slices)
 }
 
-fn picker(entries: &mut [&mut Entry]) -> Vec<Entry> {
+fn picker(entries: Vec<Entry>) -> Vec<Entry> {
     //if the entries are too long, chunk it and recurse
     if entries.len() > 10 {
         let mut processed_entries: Vec<Entry>;
-
-        let mut chunks = entries.chunks_mut(10);
-        for chunk in &mut chunks {
-            processed_entries.append(&mut picker(chunk));
+        let mut v_chunked: Vec<Vec<Entry>> = v.chunks(10).map(|x| x.to_vec()).collect();
+        for chunk in &mut v_chunked {
+            processed_entries.append(&mut picker(chunk.to_owned()));
         }
         processed_entries
     } else {
