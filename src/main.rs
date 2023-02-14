@@ -1,7 +1,7 @@
 pub mod mods;
 
 use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
-use mods::{AvailableColors, Database, Entry, Sheet};
+use mods::{AvailableColors, Database, Entry, EntryBag, Sheet};
 use rand::thread_rng;
 use std::cmp::Ordering;
 use std::fs::File;
@@ -34,24 +34,59 @@ fn load_db() -> Database {
     db
 }
 
-fn picker_setup(sheet_entries: Vec<Entry>) -> Vec<Entry> {
+fn picker_setup(sheet_entries: Vec<Entry>) {
     //fix this so it returns ALL entries or at least overwrites the sheet entries- actually yes do that
-    let mut sheet_slices = sheet_entries.as_mut_slice();
-    picker(sheet_slices)
+    let mut entry_bag_list = entry_bagger(sheet_entries);
+    for mut bag in entry_bag_list {
+        (_, bag.entries) = picker((false, bag.entries));
+    }
 }
 
-fn picker(entries: Vec<Entry>) -> Vec<Entry> {
+fn entry_bagger(entries: Vec<Entry>) -> Vec<EntryBag> {
+    let mut entry_bag_list: Vec<EntryBag> = vec![];
+    for entry in entries {
+        let mut entry_bag = entry_bag_list
+            .into_iter()
+            .find(|eb| eb.loss_len == entry.get_lost_len());
+        match entry_bag {
+            Some(eb) => eb.new_entry(entry),
+            None => {
+                let eb = EntryBag {
+                    len: 1,
+                    loss_len: entry.get_lost_len(),
+                    entries: vec![entry],
+                };
+                entry_bag_list.push(eb);
+            }
+        }
+    }
+    entry_bag_list
+}
+
+fn picker(entries: (bool, Vec<Entry>)) -> (bool, Vec<Entry>) {
     //if the entries are too long, chunk it and recurse
+    let (quit_bool, entries) = entries;
     if entries.len() > 10 {
         let mut processed_entries: Vec<Entry>;
-        let mut v_chunked: Vec<Vec<Entry>> = v.chunks(10).map(|x| x.to_vec()).collect();
-        for chunk in &mut v_chunked {
-            processed_entries.append(&mut picker(chunk.to_owned()));
+        let mut v_chunked: Vec<Vec<Entry>> = entries.chunks(10).map(|x| x.to_vec()).collect();
+
+        for i in 0..v_chunked.len() {
+            let mut v_chunk = v_chunked[i];
+            let (quit_bool, mut entries) = picker((quit_bool, v_chunk.to_owned()));
+            processed_entries.append(&mut entries);
+            if quit_bool {
+                for y in i..v_chunked.len() {
+                    let mut v_chunk = v_chunked[y];
+                    processed_entries.append(&mut v_chunk);
+                }
+                break;
+            }
         }
-        processed_entries
+        (quit_bool, processed_entries)
     } else {
-        let selection: Vec<usize> = mult_menu_creation(entries, "entries");
+        let selection: Vec<usize> = mult_menu_creation(entries.as_slice(), "entries");
         let winner_ids: Vec<i32> = selection.into_iter().map(|s| entries[s].id).collect();
+        //fix this to actually build properly
         let mut losers: Vec<&mut &mut Entry> = entries
             .iter_mut()
             .filter(|e| !winner_ids.contains(&e.id))

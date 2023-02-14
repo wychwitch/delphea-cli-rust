@@ -285,6 +285,13 @@ impl Display for Entry {
     }
 }
 
+impl EntryBag {
+    pub fn new_entry(&mut self, entry: Entry) {
+        self.entries.push(entry);
+        self.len += 1;
+    }
+}
+
 impl Database {
     pub fn save(&self) {}
 
