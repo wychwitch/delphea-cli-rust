@@ -48,7 +48,13 @@ pub struct Sheet {
     pub name: String,
     pub color: u8,
     pub note: String,
-    pub all_entry_ids: Vec<i32>,
+    pub entries: Vec<Entry>,
+}
+
+pub struct EntryBag {
+    pub len: usize,
+    pub loss_len: usize,
+    pub entries: Vec<Entry>,
 }
 
 //
@@ -183,7 +189,7 @@ impl Sheet {
             name: name.into(),
             color,
             note: note.into(),
-            all_entry_ids: vec![],
+            entries: vec![],
         }
     }
 
@@ -199,15 +205,11 @@ impl Sheet {
         let filtered: Vec<usize> = all_entries
             .iter()
             .enumerate()
-            .filter(|&(_, entry)| {
-                entry.sheet_id == self.id
-
-            })
-            .map(|(i,_)| i)
+            .filter(|&(_, entry)| entry.sheet_id == self.id)
+            .map(|(i, _)| i)
             .collect::<Vec<usize>>();
         filtered
     }
-
 
     pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
         let (name, _, color, note) = self.interactive_create_root();

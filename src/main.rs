@@ -17,7 +17,7 @@ fn handle_round(mut db: Database) {
 }
 
 fn main_menu(db: &mut Database) {}
-fn handle_create(db:Database) {}
+fn handle_create(db: Database) {}
 
 fn load_db() -> Database {
     let db = match File::open("~/.delphea.json") {
@@ -34,14 +34,11 @@ fn load_db() -> Database {
     db
 }
 
-fn picker_setup(entries: Vec<Entry>, indices: Vec<usize>) -> Vec<Entry>{
-    let mut sheet_entries: Vec<&mut Entry> = indices
-            .into_iter()
-            .map(|i| &mut entries[i])
-            .collect();
+fn picker_setup(entries: Vec<Entry>, indices: Vec<usize>) -> Vec<Entry> {
+    let mut sheet_entries: Vec<&mut Entry> = indices.into_iter().map(|i| &mut entries[i]).collect();
+
     //fix this so it returns ALL entries or at least overwrites the sheet entries- actually yes do that
     picker(&mut sheet_entries.as_mut_slice())
-
 }
 
 fn picker(entries: &mut [&mut Entry]) -> Vec<Entry> {
