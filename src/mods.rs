@@ -50,7 +50,7 @@ pub struct Sheet {
     pub note: String,
     pub entries: Vec<Entry>,
 }
-
+#[derive(Debug, Clone)]
 pub struct EntryBag {
     pub len: usize,
     pub loss_len: usize,
@@ -289,6 +289,9 @@ impl EntryBag {
     pub fn new_entry(&mut self, entry: Entry) {
         self.entries.push(entry);
         self.len += 1;
+    }
+    pub fn is_all_ranked(&self) -> bool {
+        self.entries.into_iter().all(|e| e.rank > 0)
     }
 }
 

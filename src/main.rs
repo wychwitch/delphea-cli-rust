@@ -12,8 +12,8 @@ fn handle_round(mut db: Database) {
     let sheet_idx = db.pick_sheet_idx();
     let mut sheet = &mut db.all_sheets[sheet_idx];
     sheet.debug_add_entries(&mut db.all_entries);
-    let indices: Vec<usize> = sheet.get_entry_indices(&db.all_entries);
-    db.all_entries = picker_setup(db.all_entries, indices);
+    sheet.entries = picker_setup(sheet.entries);
+    db.all_sheets[sheet_idx] = sheet.clone();
 }
 
 fn main_menu(db: &mut Database) {}
@@ -34,22 +34,34 @@ fn load_db() -> Database {
     db
 }
 
-fn picker_setup(sheet_entries: Vec<Entry>) {
-    //fix this so it returns ALL entries or at least overwrites the sheet entries- actually yes do that
-    let mut entry_bag_list = entry_bagger(sheet_entries);
-    for mut bag in entry_bag_list {
-        (_, bag.entries) = picker((false, bag.entries));
+fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
+    let mut entry_bag_list = entry_bag_packer(sheet_entries);
+    let mut is_processed = false;
+    while !is_processed {
+        for mut bag in entry_bag_list {
+            (_, bag.entries) = picker((false, bag.entries));
+        }
+        is_processed = entry_bag_list
+            .clone()
+            .into_iter()
+            .all(|e| e.is_all_ranked());
+        if !is_processed {
+            sheet_entries = entry_bag_unpacker(entry_bag_list);
+            entry_bag_list = entry_bag_packer(sheet_entries)
+        }
     }
+    entry_bag_unpacker(entry_bag_list)
 }
 
-fn entry_bagger(entries: Vec<Entry>) -> Vec<EntryBag> {
+fn entry_bag_packer(entries: Vec<Entry>) -> Vec<EntryBag> {
     let mut entry_bag_list: Vec<EntryBag> = vec![];
     for entry in entries {
-        let mut entry_bag = entry_bag_list
+        let entry_bag = entry_bag_list
+            .clone()
             .into_iter()
             .find(|eb| eb.loss_len == entry.get_lost_len());
         match entry_bag {
-            Some(eb) => eb.new_entry(entry),
+            Some(mut eb) => eb.new_entry(entry),
             None => {
                 let eb = EntryBag {
                     len: 1,
@@ -60,23 +72,34 @@ fn entry_bagger(entries: Vec<Entry>) -> Vec<EntryBag> {
             }
         }
     }
+    entry_bag_list.sort_by(|a, b| a.loss_len.cmp(&b.loss_len));
     entry_bag_list
+}
+
+fn entry_bag_unpacker(mut entry_bag_list: Vec<EntryBag>) -> Vec<Entry> {
+    let mut entries = Vec::new();
+
+    for mut bag in entry_bag_list {
+        let mut bag_entries = bag.entries;
+        entries.append(&mut bag_entries)
+    }
+    entries
 }
 
 fn picker(entries: (bool, Vec<Entry>)) -> (bool, Vec<Entry>) {
     //if the entries are too long, chunk it and recurse
     let (quit_bool, entries) = entries;
     if entries.len() > 10 {
-        let mut processed_entries: Vec<Entry>;
+        let mut processed_entries: Vec<Entry> = Vec::new();
         let mut v_chunked: Vec<Vec<Entry>> = entries.chunks(10).map(|x| x.to_vec()).collect();
 
         for i in 0..v_chunked.len() {
-            let mut v_chunk = v_chunked[i];
+            let v_chunk = &v_chunked[i];
             let (quit_bool, mut entries) = picker((quit_bool, v_chunk.to_owned()));
             processed_entries.append(&mut entries);
             if quit_bool {
                 for y in i..v_chunked.len() {
-                    let mut v_chunk = v_chunked[y];
+                    let mut v_chunk = &mut v_chunked[y];
                     processed_entries.append(&mut v_chunk);
                 }
                 break;
@@ -85,18 +108,21 @@ fn picker(entries: (bool, Vec<Entry>)) -> (bool, Vec<Entry>) {
         (quit_bool, processed_entries)
     } else {
         let selection: Vec<usize> = mult_menu_creation(entries.as_slice(), "entries");
-        let winner_ids: Vec<i32> = selection.into_iter().map(|s| entries[s].id).collect();
-        //fix this to actually build properly
-        let mut losers: Vec<&mut &mut Entry> = entries
-            .iter_mut()
-            .filter(|e| !winner_ids.contains(&e.id))
+        let winners: Vec<Entry> = selection.into_iter().map(|s| entries[s].clone()).collect();
+        let mut losers: Vec<Entry> = entries
+            .into_iter()
+            .filter(|e| !winners.iter().any(|w| w.id == e.id))
             .collect();
-        for i in 0..losers.len() {
-            //todo fix this so it builds the right kind of vec
-            let mut winner_vec = winner_ids.clone();
-            let mut loser = &mut losers[i];
+        for loser in losers.as_mut_slice() {
+            let mut winner_vec: Vec<i32> = winners.clone().into_iter().map(|w| w.id).collect();
             loser.lost_against.append(&mut winner_vec);
         }
+
+        let mut collected_entries = winners.clone();
+        let mut cloned_losers = losers.clone();
+        collected_entries.append(&mut cloned_losers);
+
+        (false, collected_entries)
     }
 }
 
@@ -162,6 +188,5 @@ fn main() {
         AvailableColors::Orange as u8,
         "",
     ));
-
     handle_round(db)
 }
