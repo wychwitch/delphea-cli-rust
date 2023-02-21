@@ -193,8 +193,8 @@ impl Sheet {
         }
     }
 
-    pub fn get_entries(&self) -> Vec<Entry> {
-        self.entries
+    pub fn get_entries(&mut self) -> Vec<Entry> {
+        self.entries.to_owned()
     }
 
     pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
@@ -240,7 +240,7 @@ impl Sheet {
         let start = 0;
         let end = 10;
         let mut num_mod = 0;
-        let mut quit = false;
+        let quit: bool = false;
 
         while sheet_entries.iter().all(|e| e.rank != 0) || !quit {
             sheet_entries.shuffle(&mut rng);
@@ -291,7 +291,7 @@ impl EntryBag {
         self.len += 1;
     }
     pub fn is_all_ranked(&self) -> bool {
-        self.entries.into_iter().all(|e| e.rank > 0)
+        self.entries.iter().all(|e| e.rank > 0)
     }
 }
 

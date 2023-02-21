@@ -12,7 +12,7 @@ fn handle_round(mut db: Database) {
     let sheet_idx = db.pick_sheet_idx();
     let mut sheet = &mut db.all_sheets[sheet_idx];
     sheet.debug_add_entries(&mut db.all_entries);
-    sheet.entries = picker_setup(sheet.entries);
+    sheet.entries = picker_setup(sheet.entries.to_owned());
     db.all_sheets[sheet_idx] = sheet.clone();
 }
 
@@ -38,8 +38,8 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
     let mut entry_bag_list = entry_bag_packer(sheet_entries);
     let mut is_processed = false;
     while !is_processed {
-        for mut bag in entry_bag_list {
-            (_, bag.entries) = picker((false, bag.entries));
+        for mut bag in &mut entry_bag_list[..] {
+            (_, bag.entries) = picker((false, bag.entries.to_owned()));
         }
         is_processed = entry_bag_list
             .clone()
