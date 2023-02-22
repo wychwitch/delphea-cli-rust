@@ -47,7 +47,7 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
             .all(|e| e.is_all_ranked());
         if !is_processed {
             sheet_entries = entry_bag_unpacker(entry_bag_list);
-            entry_bag_list = entry_bag_packer(sheet_entries)
+            entry_bag_list = entry_bag_packer(sheet_entries);
         }
     }
     entry_bag_unpacker(entry_bag_list)
