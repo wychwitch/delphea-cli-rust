@@ -38,13 +38,22 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
     let mut entry_bag_list = entry_bag_packer(sheet_entries);
     let mut is_processed = false;
     while !is_processed {
+        let mut quit_bool: bool = false;
+        // For each entrybag in the vec, run picker
         for mut bag in &mut entry_bag_list[..] {
-            (_, bag.entries) = picker((false, bag.entries.to_owned()));
+            (quit_bool, bag.entries) = picker((false, bag.entries.to_owned()));
+            //if the user quit, break out
+            if quit_bool {
+                break;
+            }
         }
+        // check if all the items are ranked
         is_processed = entry_bag_list
             .clone()
             .into_iter()
-            .all(|e| e.is_all_ranked());
+            .all(|e| e.is_all_ranked())
+            || quit_bool;
+        //if its all ranked or user quit, unpack before loop breaks
         if !is_processed {
             sheet_entries = entry_bag_unpacker(entry_bag_list);
             entry_bag_list = entry_bag_packer(sheet_entries);
@@ -136,9 +145,7 @@ fn mult_menu_creation<T: std::fmt::Display>(choices: &[T], msg: &str) -> Vec<usi
     selection_i
 }
 
-fn main() {
-    let mut db: Database = load_db();
-
+fn debug_db(mut db: Database) -> Database {
     db.all_sheets.push(Sheet::new(
         &db.all_sheets,
         "Games",
@@ -188,5 +195,11 @@ fn main() {
         AvailableColors::Orange as u8,
         "",
     ));
+    db
+}
+
+fn main() {
+    let db: Database = load_db();
+    let db = debug_db(db);
     handle_round(db)
 }

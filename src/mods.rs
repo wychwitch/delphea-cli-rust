@@ -34,7 +34,6 @@ pub struct Database {
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entry {
     pub id: i32,
-    pub sheet_id: i32,
     pub name: String,
     pub color: u8,
     pub note: String,
@@ -74,7 +73,6 @@ impl Entry {
     ) -> Entry {
         Entry {
             id: entries.len() as i32,
-            sheet_id,
             name: name.to_string(),
             color,
             note: note.to_string(),
@@ -94,21 +92,12 @@ impl Entry {
         let sheet_id = sheets[sheet_i].id;
         Entry {
             id,
-            sheet_id,
             name,
             color,
             note,
             rank: 0,
             lost_against: vec![],
         }
-    }
-
-    pub fn get_sheet(&self, sheets: Vec<Sheet>) -> Sheet {
-        sheets
-            .into_iter()
-            .find(|sheet| sheet.id == self.sheet_id)
-            .expect("valid sheet id")
-            .to_owned()
     }
 
     pub fn track_losses(&mut self, mut winner_ids: Vec<i32>) {
@@ -210,64 +199,10 @@ impl Sheet {
             .unwrap()
     }
 
-    pub fn get_entries_by_sheet_id(entries: Vec<Entry>, sheet_id: i32) -> Vec<Entry> {
-        let filtered = entries
-            .clone()
-            .into_iter()
-            .filter(|entry| entry.sheet_id == sheet_id)
-            .collect::<Vec<Entry>>()
-            .to_vec();
-        filtered
-    }
-
     pub fn clear_all_favorites(&mut self) {
         for i in 0..self.entries.len() {
             self.entries[i].clear_losses();
             self.entries[i].rank = 0;
-        }
-    }
-
-    pub fn picker(&mut self, all_entries: &mut Vec<Entry>) {
-        let mut rng = thread_rng();
-
-        let mut binding = all_entries
-            .iter_mut()
-            .filter(|entry| entry.sheet_id == self.id)
-            .collect::<Vec<&mut Entry>>();
-
-        let sheet_entries = binding.as_mut_slice();
-
-        let start = 0;
-        let end = 10;
-        let mut num_mod = 0;
-        let quit: bool = false;
-
-        while sheet_entries.iter().all(|e| e.rank != 0) || !quit {
-            sheet_entries.shuffle(&mut rng);
-            let entry_slice = &sheet_entries[(start + num_mod)..(end + num_mod)];
-            let selection: Vec<usize> = mult_menu_creation(&entry_slice, "entries");
-
-            let winner_ids: Vec<i32> = selection.into_iter().map(|s| sheet_entries[s].id).collect();
-
-            let entry_slice;
-
-            let sheet_len = &sheet_entries.len();
-
-            if end + num_mod <= sheet_entries.len() {
-                entry_slice = &mut sheet_entries[(start + num_mod)..(end + num_mod)];
-            } else {
-                entry_slice = &mut sheet_entries[(start + num_mod)..*sheet_len];
-            }
-
-            for i in 0..entry_slice.len() {
-                let entry = &mut entry_slice[i];
-
-                if !winner_ids.contains(&entry.id) {
-                    let mut winner_ids_clone: Vec<i32> = winner_ids.to_vec();
-                    entry.lost_against.append(&mut winner_ids_clone);
-                }
-            }
-            num_mod += 10;
         }
     }
 }
