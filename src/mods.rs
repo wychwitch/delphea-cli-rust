@@ -182,6 +182,21 @@ impl Sheet {
         }
     }
 
+    pub fn new_debug(
+        id: i32,
+        name: &str,
+        color: u8,
+        note: &str,
+        entries: &mut Vec<Entry>,
+    ) -> Sheet {
+        Sheet {
+            id,
+            name: name.into(),
+            color,
+            note: note.into(),
+            entries: entries.to_owned(),
+        }
+    }
     pub fn get_entries(&mut self) -> Vec<Entry> {
         self.entries.to_owned()
     }
@@ -313,16 +328,6 @@ trait InteractiveDelete {
 
 pub fn menu_creation<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
     let selection_i: usize = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt(format!("Pick your {msg} (use space)"))
-        .items(&choices)
-        .interact()
-        .unwrap();
-
-    selection_i
-}
-
-pub fn mult_menu_creation<T: std::fmt::Display>(choices: &[T], msg: &str) -> Vec<usize> {
-    let selection_i = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt(format!("Pick your {msg} (use space)"))
         .items(&choices)
         .interact()
