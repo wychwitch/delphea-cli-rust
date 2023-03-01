@@ -1,6 +1,6 @@
 pub mod mods;
 
-use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
+use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Select};
 use log::debug;
 use mods::{AvailableColors, Database, Entry, EntryBag, Sheet};
 use rand::thread_rng;
@@ -10,7 +10,7 @@ use std::fs::File;
 use std::vec;
 
 fn handle_round(mut db: Database) {
-    print!("2");
+    println!("2");
     let sheet_idx = db.pick_sheet_idx();
     let mut sheet = &mut db.all_sheets[sheet_idx];
     sheet.debug_add_entries(&mut db.all_entries);
@@ -37,14 +37,12 @@ fn load_db() -> Database {
 }
 
 fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
-    print!("3");
     let mut entry_bag_list = entry_bag_packer(sheet_entries);
     let mut is_processed = false;
     while !is_processed {
         let mut quit_bool: bool = false;
         // For each entrybag in the vec, run picker
         for mut bag in &mut entry_bag_list[..] {
-            print!("type len: {}", bag.entries.len());
             (quit_bool, bag.entries) = picker((false, bag.entries.to_owned()));
             //if the user quit, break out
             if quit_bool {
@@ -68,14 +66,20 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
 
 fn entry_bag_packer(entries: Vec<Entry>) -> Vec<EntryBag> {
     let mut entry_bag_list: Vec<EntryBag> = vec![];
+    let mut i = 0;
     for entry in entries {
         let entry_bag = entry_bag_list
-            .clone()
-            .into_iter()
+            .iter_mut()
             .find(|eb| eb.loss_len == entry.get_lost_len());
+        i = i + 1;
         match entry_bag {
-            Some(mut eb) => eb.new_entry(entry),
+            Some(mut eb) => {
+                println!("entry bag some!");
+                eb.entries.push(entry);
+                eb.len = eb.len + 1;
+            }
             None => {
+                println!("entry bag none!");
                 let eb = EntryBag {
                     len: 1,
                     loss_len: entry.get_lost_len(),
@@ -106,6 +110,7 @@ fn picker(entries: (bool, Vec<Entry>)) -> (bool, Vec<Entry>) {
         let mut processed_entries: Vec<Entry> = Vec::new();
         let mut v_chunked: Vec<Vec<Entry>> = entries.chunks(10).map(|x| x.to_vec()).collect();
 
+        dbg!(v_chunked.len());
         for i in 0..v_chunked.len() {
             let v_chunk = &v_chunked[i];
             let (quit_bool, mut entries) = picker((quit_bool, v_chunk.to_owned()));
@@ -139,9 +144,13 @@ fn picker(entries: (bool, Vec<Entry>)) -> (bool, Vec<Entry>) {
     }
 }
 
-fn mult_menu_creation<T: std::fmt::Display>(choices: &[T], msg: &str) -> Vec<usize> {
-    print!("hello?");
-    let selection_i = MultiSelect::with_theme(&ColorfulTheme::default())
+fn mult_menu_creation<T: std::fmt::Display + std::fmt::Debug>(
+    choices: &[T],
+    msg: &str,
+) -> Vec<usize> {
+    println!("multmenu creation");
+    dbg!(choices);
+    let selection_i = MultiSelect::with_theme(&SimpleTheme)
         .with_prompt(format!("Pick your {msg} (use space)"))
         .items(&choices)
         .interact()
@@ -232,6 +241,86 @@ fn debug_db(mut db: Database) -> Database {
             rank: 0,
             lost_against: vec![],
         },
+        Entry {
+            id: 11,
+            name: "Marcago".to_string(),
+            color: AvailableColors::Red as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 12,
+            name: "Munkidori".to_string(),
+            color: AvailableColors::Bluish as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 13,
+            name: "Okidogi".to_string(),
+            color: AvailableColors::Purple as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 14,
+            name: "Palkia".to_string(),
+            color: AvailableColors::Pink as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 15,
+            name: "Rattacate".to_string(),
+            color: AvailableColors::Pink as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 16,
+            name: "Dedenne".to_string(),
+            color: AvailableColors::Bluish as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 17,
+            name: "Absol".to_string(),
+            color: AvailableColors::Green as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 18,
+            name: "Wormadam".to_string(),
+            color: AvailableColors::Red as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 19,
+            name: "Togekiss".to_string(),
+            color: AvailableColors::Purple as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
+        Entry {
+            id: 20,
+            name: "Steelix".to_string(),
+            color: AvailableColors::Green as u8,
+            note: "".to_string(),
+            rank: 0,
+            lost_against: vec![],
+        },
     ];
     db.all_sheets.push(Sheet::new_debug(
         1,
@@ -253,5 +342,5 @@ fn main() {
     let db: Database = load_db();
     let db = debug_db(db);
     handle_round(db);
-    print!("1");
+    println!("1");
 }

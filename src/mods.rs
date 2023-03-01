@@ -3,7 +3,10 @@ use dialoguer::{theme::ColorfulTheme, Input, MultiSelect, Select};
 use enum_iterator::{all, Sequence};
 use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use std::{
+    borrow::BorrowMut,
+    fmt::{self, Display},
+};
 
 #[derive(Debug, PartialEq, Sequence, Clone)]
 pub enum AvailableColors {
@@ -236,10 +239,6 @@ impl Display for Entry {
 }
 
 impl EntryBag {
-    pub fn new_entry(&mut self, entry: Entry) {
-        self.entries.push(entry);
-        self.len += 1;
-    }
     pub fn is_all_ranked(&self) -> bool {
         self.entries.iter().all(|e| e.rank > 0)
     }
