@@ -37,8 +37,9 @@ fn load_db() -> Database {
 }
 
 fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
-    let mut entry_bag_list = entry_bag_packer(sheet_entries);
-    let mut is_processed = false;
+    let mut losers: Vec<Entry> = vec![];
+    let mut ranked: Vec<Entry> = vec![];
+    let mut survivors: Vec<Entry> = vec![];
     while !is_processed {
         let mut quit_bool: bool = false;
         // For each entrybag in the vec, run picker
@@ -61,47 +62,36 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
             entry_bag_list = entry_bag_packer(sheet_entries);
         }
     }
-    entry_bag_unpacker(entry_bag_list)
 }
 
-fn entry_bag_packer(entries: Vec<Entry>) -> Vec<EntryBag> {
-    let mut entry_bag_list: Vec<EntryBag> = vec![];
-    let mut i = 0;
-    for entry in entries {
-        let entry_bag = entry_bag_list
-            .iter_mut()
-            .find(|eb| eb.loss_len == entry.get_lost_len());
-        i = i + 1;
-        match entry_bag {
-            Some(mut eb) => {
-                println!("entry bag some!");
-                eb.entries.push(entry);
-                eb.len = eb.len + 1;
-            }
-            None => {
-                println!("entry bag none!");
-                let eb = EntryBag {
-                    len: 1,
-                    loss_len: entry.get_lost_len(),
-                    entries: vec![entry],
-                };
-                entry_bag_list.push(eb);
-            }
+fn check_for_finished_round(
+    survivors: Vec<Entry>,
+    losers: Vec<Entry>,
+    ranked: Vec<Entry>,
+) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
+    if survivors.len() == 1 {
+        let highest_rank = ranked.len() + 1;
+        let mut winner = survivors[0];
+        let mut released_entries = losers
+            .into_iter()
+            .filter(|e| e.lost_against.contains(&winner.id));
+        for mut entry in released_entries {
+            let index: usize = entry
+                .lost_against
+                .iter()
+                .position(|id| id == &winner.id)
+                .unwrap();
+            entry.lost_against.remove(index);
         }
+        survivors.append(released_entries);
+        ranked.push(winner);
+        (survivors, losers, ranked)
+    } else {
+        (survivors, losers, ranked)
     }
-    entry_bag_list.sort_by(|a, b| a.loss_len.cmp(&b.loss_len));
-    entry_bag_list
 }
 
-fn entry_bag_unpacker(mut entry_bag_list: Vec<EntryBag>) -> Vec<Entry> {
-    let mut entries = Vec::new();
-
-    for mut bag in entry_bag_list {
-        let mut bag_entries = bag.entries;
-        entries.append(&mut bag_entries)
-    }
-    entries
-}
+fn remove_ranked_from_losers() {}
 
 fn picker(entries: (bool, Vec<Entry>)) -> (bool, Vec<Entry>) {
     //if the entries are too long, chunk it and recurse
