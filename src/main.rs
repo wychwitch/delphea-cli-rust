@@ -73,38 +73,37 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
     dbg!(survivors.clone());
     dbg!(ranked.clone());
     dbg!(losers.clone());
-    let mut processed_survivors: Vec<Entry> = Vec::new();
+    let mut processed_survivors: Vec<Entry> = survivors.to_owned();
     let mut processed_losers: Vec<Entry> = losers.to_owned();
+    let mut processed_ranked: Vec<Entry> = ranked.to_owned();
     while !is_processed && !quit_bool {
-        let mut v_chunked: Vec<Vec<Entry>> = survivors.chunks(10).map(|x| x.to_vec()).collect();
-        for i in 0..v_chunked.len() {
-            let mut v_chunk = &mut v_chunked[i];
-            let (quit_bool, (mut returned_survivors, mut returned_losers)) =
-                picker(v_chunk.to_owned(), processed_losers.to_owned());
-            processed_losers.append(&mut returned_losers);
-            processed_survivors.append(&mut returned_survivors);
-            if quit_bool {
-                for y in i..v_chunked.len() {
-                    let mut v_chunk = &mut v_chunked[y];
-                    processed_survivors.append(&mut v_chunk);
-                }
-                break;
-            }
+        let mut returned_survivors: Vec<Entry> = vec![];
+        let mut returned_losers: Vec<Entry> = vec![];
+        let mut v_chunked: Vec<Vec<Entry>> =
+            processed_survivors.chunks(10).map(|x| x.to_vec()).collect();
+        for chunk in v_chunked {
+            let mut picked_survivors;
+            let mut picked_losers;
+            (quit_bool, (picked_survivors, picked_losers)) = picker(chunk);
+            processed_losers.append(&mut picked_losers);
+            returned_survivors.append(&mut picked_survivors);
         }
-
-        (quit_bool, (survivors, losers)) = picker(survivors, losers);
-        (
-            is_processed,
-            (processed_survivors, processed_losers, ranked),
-        ) = check_for_finished_round(survivors, losers, ranked);
+        dbg!(returned_survivors.clone());
+        dbg!(processed_losers.clone());
+       (processed_survivors, processed_losers, ranked) = check_for_finished_round(returned_survivors, processed_losers, ranked); 
     }
     merge_entry_vecs(&mut survivors, &mut losers, &mut ranked)
 }
 
-fn register_winners(winner_ids: &mut Vec<i32>, mut losers: Vec<Entry>) -> Vec<Entry> {
+fn register_winners(winner_ids: Vec<i32>, mut losers: Vec<Entry>) -> Vec<Entry> {
+    let mut i = 0;
     for loser in losers.as_mut_slice() {
-        loser.lost_against.append(winner_ids);
+        let mut cloned_ids = winner_ids.clone();
+        loser.lost_against.append(&mut cloned_ids);
+        i += 1;
     }
+    dbg!(i);
+    dbg!(losers.clone());
     losers
 }
 
@@ -112,21 +111,37 @@ fn check_for_finished_round(
     mut survivors: Vec<Entry>,
     mut losers: Vec<Entry>,
     mut ranked: Vec<Entry>,
-) -> (bool, (Vec<Entry>, Vec<Entry>, Vec<Entry>)) {
+) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
+    dbg!(losers.clone());
     if survivors.len() == 1 {
-        dbg!("IN FINISHED ROUND");
-        let highest_rank = ranked.len() + 1;
-        let mut ranked_winner = survivors[0].clone();
-        ranked_winner.rank = highest_rank;
-        let mut released_entries: Vec<Entry> = losers
+        dbg!("IN Check 1");
+        process_winners(survivors[0].clone(), losers, ranked)
+        
+    } 
+
+    else if survivors.len() == 2 {
+        let (returned_survivors, returned_losers, returned_ranked) = process_winners(survivors[0].clone(), losers, ranked);
+        process_winners(survivors[1].clone(), returned_losers, returned_ranked)
+    }
+    else {
+        (survivors, losers, ranked)
+    }
+}
+
+
+fn process_winners(mut ranked_winner: Entry, losers: Vec<Entry>, mut ranked: Vec<Entry>) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>){
+    let highest_rank = ranked.len() + 1;
+    ranked_winner.rank = highest_rank;
+
+        let mut effected_entries: Vec<Entry> = losers
             .clone()
             .into_iter()
             .filter(|e| {
                 e.lost_against.contains(&ranked_winner.id)
-                    || e.get_lost_len() == 0 && &e.id != &ranked_winner.id
             })
             .collect();
-        for entry in &mut released_entries {
+
+        for entry in &mut effected_entries {
             let index: Option<usize> = entry
                 .lost_against
                 .iter()
@@ -138,24 +153,28 @@ fn check_for_finished_round(
                 None => (),
             };
         }
+
+        let mut released_entries: Vec<Entry> = effected_entries 
+            .clone()
+            .into_iter()
+            .filter(|e| {
+                e.get_lost_len() == 0 && e.id != ranked_winner.id
+            })
+            .collect();
+
         ranked.push(ranked_winner);
         //dbg!(losers.clone());
         let new_losers: Vec<Entry> = losers
             .into_iter()
             .filter(|e| e.get_lost_len() != 0)
             .collect();
-        let mut edited_released = released_entries.clone();
         //dbg!(released_entries.clone());
-        survivors.append(&mut edited_released);
         //dbg!(new_losers.clone());
         //dbg!(ranked.clone());
-        (false, (released_entries, new_losers, ranked))
-    } else {
-        (false, (survivors, losers, ranked))
-    }
+        (released_entries.clone(), new_losers, ranked)
 }
 
-fn picker(survivors: Vec<Entry>, mut losers: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
+fn picker(survivors: Vec<Entry> ) -> (bool, (Vec<Entry>, Vec<Entry>)) {
     //if the entries are too long, chunk it and recurse
     let mut quit_bool = false;
     let selection: Vec<usize> = mult_menu_creation(survivors.as_slice(), "entries");
@@ -172,7 +191,7 @@ fn picker(survivors: Vec<Entry>, mut losers: Vec<Entry>) -> (bool, (Vec<Entry>, 
         .into_iter()
         .map(|w| w.id)
         .collect();
-    let found_losers = register_winners(&mut winner_ids, found_losers);
+    let found_losers = register_winners(winner_ids, found_losers);
 
     (false, (selected_survivors, found_losers))
 }
