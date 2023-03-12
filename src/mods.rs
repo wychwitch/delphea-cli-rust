@@ -40,7 +40,7 @@ pub struct Entry {
     pub name: String,
     pub color: u8,
     pub note: String,
-    pub rank: i32,
+    pub rank: usize,
     pub lost_against: Vec<i32>,
 }
 
