@@ -10,7 +10,6 @@ use std::fs::File;
 use std::vec;
 
 fn handle_round(mut db: Database) {
-    println!("2");
     let sheet_idx = db.pick_sheet_idx();
     let mut sheet = &mut db.all_sheets[sheet_idx];
     sheet.debug_add_entries(&mut db.all_entries);
@@ -68,11 +67,8 @@ fn merge_entry_vecs(
 
 fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
     let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
-    let mut is_processed = false;
+    let is_processed = false;
     let mut quit_bool: bool = false;
-    dbg!(survivors.clone());
-    dbg!(ranked.clone());
-    dbg!(losers.clone());
     let mut processed_survivors: Vec<Entry> = survivors.to_owned();
     let mut processed_losers: Vec<Entry> = losers.to_owned();
     let mut processed_ranked: Vec<Entry> = ranked.to_owned();
@@ -88,22 +84,17 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
             processed_losers.append(&mut picked_losers);
             returned_survivors.append(&mut picked_survivors);
         }
-        dbg!(returned_survivors.clone());
-        dbg!(processed_losers.clone());
-       (processed_survivors, processed_losers, ranked) = check_for_finished_round(returned_survivors, processed_losers, ranked); 
+        (processed_survivors, processed_losers, ranked) =
+            check_for_finished_round(returned_survivors, processed_losers, ranked);
     }
     merge_entry_vecs(&mut survivors, &mut losers, &mut ranked)
 }
 
 fn register_winners(winner_ids: Vec<i32>, mut losers: Vec<Entry>) -> Vec<Entry> {
-    let mut i = 0;
     for loser in losers.as_mut_slice() {
         let mut cloned_ids = winner_ids.clone();
         loser.lost_against.append(&mut cloned_ids);
-        i += 1;
     }
-    dbg!(i);
-    dbg!(losers.clone());
     losers
 }
 
@@ -112,69 +103,67 @@ fn check_for_finished_round(
     mut losers: Vec<Entry>,
     mut ranked: Vec<Entry>,
 ) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
-    dbg!(losers.clone());
+    let mut returned_survivors: Vec<Entry>;
+    let mut returned_losers: Vec<Entry>;
+    let mut returned_ranked: Vec<Entry>;
     if survivors.len() == 1 {
-        dbg!("IN Check 1");
-        process_winners(survivors[0].clone(), losers, ranked)
-        
-    } 
-
-    else if survivors.len() == 2 {
-        let (returned_survivors, returned_losers, returned_ranked) = process_winners(survivors[0].clone(), losers, ranked);
-        process_winners(survivors[1].clone(), returned_losers, returned_ranked)
-    }
-    else {
+        let mut winner = survivors.pop().unwrap();
+        (returned_survivors, returned_losers, returned_ranked) =
+            process_winner(winner, losers, ranked);
+        while returned_survivors.len() == 1 {
+            winner = returned_survivors.pop().unwrap();
+            (returned_survivors, returned_losers, returned_ranked) =
+                process_winner(winner, returned_losers, returned_ranked);
+            // panic!("jumped into here!");
+        }
+        //returned_survivors = dbg!(returned_survivors);
+        (returned_survivors, returned_losers, returned_ranked)
+    } else {
         (survivors, losers, ranked)
     }
 }
 
-
-fn process_winners(mut ranked_winner: Entry, losers: Vec<Entry>, mut ranked: Vec<Entry>) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>){
+fn process_winner(
+    mut ranked_winner: Entry,
+    mut losers: Vec<Entry>,
+    mut ranked: Vec<Entry>,
+) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
     let highest_rank = ranked.len() + 1;
     ranked_winner.rank = highest_rank;
+    ranked_winner.lost_against = vec![];
 
-        let mut effected_entries: Vec<Entry> = losers
-            .clone()
-            .into_iter()
-            .filter(|e| {
-                e.lost_against.contains(&ranked_winner.id)
-            })
-            .collect();
+    for mut entry in &mut losers {
+        entry.clear_winner(ranked_winner.id)
+    }
 
-        for entry in &mut effected_entries {
-            let index: Option<usize> = entry
-                .lost_against
-                .iter()
-                .position(|id| id == &ranked_winner.id);
-            match index {
-                Some(i) => {
-                    entry.lost_against.remove(i);
-                }
-                None => (),
-            };
-        }
+    let released_entries: Vec<Entry> = losers
+        .clone()
+        .into_iter()
+        .filter(|e| e.get_lost_len() == 0)
+        .collect();
 
-        let mut released_entries: Vec<Entry> = effected_entries 
-            .clone()
-            .into_iter()
-            .filter(|e| {
-                e.get_lost_len() == 0 && e.id != ranked_winner.id
-            })
-            .collect();
+    if released_entries.len() == 0 {
+        dbg!(released_entries);
+        //dbg!(effected_entries);
+        dbg!(ranked_winner);
+        panic!("EMPTY SURVIVORS??");
+    }
 
-        ranked.push(ranked_winner);
-        //dbg!(losers.clone());
-        let new_losers: Vec<Entry> = losers
-            .into_iter()
-            .filter(|e| e.get_lost_len() != 0)
-            .collect();
-        //dbg!(released_entries.clone());
-        //dbg!(new_losers.clone());
-        //dbg!(ranked.clone());
-        (released_entries.clone(), new_losers, ranked)
+    ranked.push(ranked_winner);
+    //dbg!(losers.clone());
+    //THIS IS HWE PROBLEMDASXJGHDSHJGSD
+    let new_losers: Vec<Entry> = losers
+        .clone()
+        .into_iter()
+        .filter(|e| e.get_lost_len() != 0)
+        .collect();
+    dbg!(released_entries.clone());
+    //dbg!(new_losers.clone());
+    //dbg!(ranked.clone());
+    (released_entries.clone(), new_losers, ranked)
 }
 
-fn picker(survivors: Vec<Entry> ) -> (bool, (Vec<Entry>, Vec<Entry>)) {
+fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
     //if the entries are too long, chunk it and recurse
     let mut quit_bool = false;
     let selection: Vec<usize> = mult_menu_creation(survivors.as_slice(), "entries");
@@ -200,8 +189,6 @@ fn mult_menu_creation<T: std::fmt::Display + std::fmt::Debug>(
     choices: &[T],
     msg: &str,
 ) -> Vec<usize> {
-    println!("multmenu creation");
-    dbg!(choices);
     let selection_i = MultiSelect::with_theme(&SimpleTheme)
         .with_prompt(format!("Pick your {msg} (use space)"))
         .items(&choices)
@@ -394,5 +381,4 @@ fn main() {
     let db: Database = load_db();
     let db = debug_db(db);
     handle_round(db);
-    println!("1");
 }

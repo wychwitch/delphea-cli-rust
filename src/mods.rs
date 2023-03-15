@@ -107,6 +107,18 @@ impl Entry {
         self.lost_against.append(&mut winner_ids);
     }
 
+    pub fn clear_winner(&mut self, winner_id: i32) {
+        let i = self.lost_against.iter().position(|id| id == &winner_id);
+        match i {
+            Some(i) => {
+                self.lost_against.swap_remove(i);
+                println!("removed an id from {}", self.name);
+                println!("{:#?}", self.lost_against())
+            }
+            None => (),
+        }
+    }
+
     pub fn clear_losses(&mut self) {
         self.lost_against = vec![];
     }
