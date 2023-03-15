@@ -67,7 +67,7 @@ fn merge_entry_vecs(
 
 fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
     let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
-    let is_processed = false;
+    let mut is_processed = false;
     let mut quit_bool: bool = false;
     let mut processed_survivors: Vec<Entry> = survivors.to_owned();
     let mut processed_losers: Vec<Entry> = losers.to_owned();
@@ -86,7 +86,9 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
         }
         (processed_survivors, processed_losers, ranked) =
             check_for_finished_round(returned_survivors, processed_losers, ranked);
+        is_processed = processed_survivors.len() == 0;
     }
+    println!("DONE!!");
     merge_entry_vecs(&mut survivors, &mut losers, &mut ranked)
 }
 
@@ -117,6 +119,7 @@ fn check_for_finished_round(
             // panic!("jumped into here!");
         }
         //returned_survivors = dbg!(returned_survivors);
+        returned_ranked = dbg!(returned_ranked);
         (returned_survivors, returned_losers, returned_ranked)
     } else {
         (survivors, losers, ranked)
@@ -142,13 +145,6 @@ fn process_winner(
         .filter(|e| e.get_lost_len() == 0)
         .collect();
 
-    if released_entries.len() == 0 {
-        dbg!(released_entries);
-        //dbg!(effected_entries);
-        dbg!(ranked_winner);
-        panic!("EMPTY SURVIVORS??");
-    }
-
     ranked.push(ranked_winner);
     //dbg!(losers.clone());
     //THIS IS HWE PROBLEMDASXJGHDSHJGSD
@@ -157,7 +153,6 @@ fn process_winner(
         .into_iter()
         .filter(|e| e.get_lost_len() != 0)
         .collect();
-    dbg!(released_entries.clone());
     //dbg!(new_losers.clone());
     //dbg!(ranked.clone());
     (released_entries.clone(), new_losers, ranked)
@@ -280,86 +275,86 @@ fn debug_db(mut db: Database) -> Database {
             rank: 0,
             lost_against: vec![],
         },
-        Entry {
-            id: 11,
-            name: "Marcago".to_string(),
-            color: AvailableColors::Red as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 12,
-            name: "Munkidori".to_string(),
-            color: AvailableColors::Bluish as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 13,
-            name: "Okidogi".to_string(),
-            color: AvailableColors::Purple as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 14,
-            name: "Palkia".to_string(),
-            color: AvailableColors::Pink as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 15,
-            name: "Rattacate".to_string(),
-            color: AvailableColors::Pink as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 16,
-            name: "Dedenne".to_string(),
-            color: AvailableColors::Bluish as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 17,
-            name: "Absol".to_string(),
-            color: AvailableColors::Green as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 18,
-            name: "Wormadam".to_string(),
-            color: AvailableColors::Red as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 19,
-            name: "Togekiss".to_string(),
-            color: AvailableColors::Purple as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
-        Entry {
-            id: 20,
-            name: "Steelix".to_string(),
-            color: AvailableColors::Green as u8,
-            note: "".to_string(),
-            rank: 0,
-            lost_against: vec![],
-        },
+        // Entry {
+        //     id: 11,
+        //     name: "Marcago".to_string(),
+        //     color: AvailableColors::Red as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 12,
+        //     name: "Munkidori".to_string(),
+        //     color: AvailableColors::Bluish as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 13,
+        //     name: "Okidogi".to_string(),
+        //     color: AvailableColors::Purple as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 14,
+        //     name: "Palkia".to_string(),
+        //     color: AvailableColors::Pink as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 15,
+        //     name: "Rattacate".to_string(),
+        //     color: AvailableColors::Pink as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 16,
+        //     name: "Dedenne".to_string(),
+        //     color: AvailableColors::Bluish as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 17,
+        //     name: "Absol".to_string(),
+        //     color: AvailableColors::Green as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 18,
+        //     name: "Wormadam".to_string(),
+        //     color: AvailableColors::Red as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 19,
+        //     name: "Togekiss".to_string(),
+        //     color: AvailableColors::Purple as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
+        // Entry {
+        //     id: 20,
+        //     name: "Steelix".to_string(),
+        //     color: AvailableColors::Green as u8,
+        //     note: "".to_string(),
+        //     rank: 0,
+        //     lost_against: vec![],
+        // },
     ];
     db.all_sheets.push(Sheet::new_debug(
         1,

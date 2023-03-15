@@ -112,8 +112,6 @@ impl Entry {
         match i {
             Some(i) => {
                 self.lost_against.swap_remove(i);
-                println!("removed an id from {}", self.name);
-                println!("{:#?}", self.lost_against())
             }
             None => (),
         }
