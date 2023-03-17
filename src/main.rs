@@ -4,9 +4,10 @@ use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Se
 use log::debug;
 use mods::{AvailableColors, Database, Entry, EntryBag, Sheet};
 use rand::thread_rng;
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fs::File;
-
+use std::io::{BufRead, BufReader, Error, Write};
 use std::vec;
 
 fn handle_round(mut db: Database) {
@@ -371,9 +372,20 @@ fn debug_db(mut db: Database) -> Database {
     ));
     db
 }
+fn save_db(db: Database) -> Result<(), Error> {
+    let db_json = serde_json::to_string(&db).unwrap();
+    let path = "db.json";
+    dbg!(&db);
+    let mut output = File::create(path)?;
+    write!(output, "{}", db_json);
+    Ok(())
+}
 
 fn main() {
     let db: Database = load_db();
+    let db2: Database = load_db();
+    let db2 = debug_db(db2);
     let db = debug_db(db);
+    save_db(db2);
     handle_round(db);
 }

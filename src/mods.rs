@@ -28,7 +28,7 @@ pub enum AvailableColors {
     Red = 1,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
     pub all_entries: Vec<Entry>,
     pub all_sheets: Vec<Sheet>,
