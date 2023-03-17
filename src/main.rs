@@ -2,7 +2,7 @@ pub mod mods;
 
 use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Select};
 use log::debug;
-use mods::{AvailableColors, Database, Entry, EntryBag, Sheet};
+use mods::{mult_menu_creation, AvailableColors, Database, Entry, EntryBag, Sheet};
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -22,10 +22,11 @@ fn main_menu(db: &mut Database) {}
 fn handle_create(db: Database) {}
 
 fn load_db() -> Database {
-    let db = match File::open("~/.delphea.json") {
+    let db = match File::open("db.json") {
         Ok(file) => {
             let db: Database =
                 serde_json::from_reader(file).expect("error while reading or parsing");
+            dbg!("loaded!");
             db
         }
         Err(_) => Database {
@@ -179,19 +180,6 @@ fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
     let found_losers = register_winners(winner_ids, found_losers);
 
     (false, (selected_survivors, found_losers))
-}
-
-fn mult_menu_creation<T: std::fmt::Display + std::fmt::Debug>(
-    choices: &[T],
-    msg: &str,
-) -> Vec<usize> {
-    let selection_i = MultiSelect::with_theme(&SimpleTheme)
-        .with_prompt(format!("Pick your {msg} (use space)"))
-        .items(&choices)
-        .interact()
-        .unwrap();
-
-    selection_i
 }
 
 fn debug_db(mut db: Database) -> Database {
@@ -383,9 +371,5 @@ fn save_db(db: Database) -> Result<(), Error> {
 
 fn main() {
     let db: Database = load_db();
-    let db2: Database = load_db();
-    let db2 = debug_db(db2);
-    let db = debug_db(db);
-    save_db(db2);
     handle_round(db);
 }
