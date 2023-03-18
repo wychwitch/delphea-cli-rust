@@ -161,9 +161,13 @@ fn process_winner(
 }
 
 fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
-    //if the entries are too long, chunk it and recurse
     let mut quit_bool = false;
-    let selection: Vec<usize> = mult_menu_creation(survivors.as_slice(), "entries");
+    let selection_result: Result<Vec<usize>, String> =
+        mult_menu_creation(survivors.as_slice(), "entries");
+    let selection = match selection_result {
+        Ok(selec) => selec,
+        Err(msg) => panic!("{}", msg),
+    };
     let selected_survivors: Vec<Entry> = selection
         .into_iter()
         .map(|s| survivors[s].clone())
@@ -360,6 +364,7 @@ fn debug_db(mut db: Database) -> Database {
     ));
     db
 }
+
 fn save_db(db: Database) -> Result<(), Error> {
     let db_json = serde_json::to_string(&db).unwrap();
     let path = "db.json";

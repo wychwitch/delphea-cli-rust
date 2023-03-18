@@ -360,7 +360,7 @@ pub fn validate_selection(
                 }
             }
         },
-        None => Err("??".to_owned()),
+        None => Err("Canceled".to_owned()),
     }
 }
 
@@ -373,6 +373,5 @@ pub fn mult_menu_creation<T: std::fmt::Display + std::fmt::Debug>(
         .items(&choices)
         .interact_opt()
         .unwrap();
-
     validate_selection(selection_i, choices.len())
 }
