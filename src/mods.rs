@@ -36,17 +36,17 @@ pub struct Database {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entry {
-    pub id: i32,
+    pub id: usize,
     pub name: String,
     pub color: u8,
     pub note: String,
     pub rank: usize,
-    pub lost_against: Vec<i32>,
+    pub lost_against: Vec<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sheet {
-    pub id: i32,
+    pub id: usize,
     pub name: String,
     pub color: u8,
     pub note: String,
@@ -69,13 +69,13 @@ impl Entry {
     }
     pub fn new(
         entries: &mut Vec<Entry>,
-        sheet_id: i32,
+        sheet_id: usize,
         name: &str,
         color: u8,
         note: &str,
     ) -> Entry {
         Entry {
-            id: entries.len() as i32,
+            id: entries.len() as usize,
             name: name.to_string(),
             color,
             note: note.to_string(),
@@ -83,31 +83,12 @@ impl Entry {
             lost_against: vec![],
         }
     }
-    pub fn interactive_create(&self, sheets: &Vec<Sheet>) -> Entry {
-        let (name, id, color, note) = self.interactive_create_root();
 
-        let sheet_i = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your sheet (use space)")
-            .items(&sheets)
-            .interact()
-            .unwrap();
-
-        let sheet_id = sheets[sheet_i].id;
-        Entry {
-            id,
-            name,
-            color,
-            note,
-            rank: 0,
-            lost_against: vec![],
-        }
-    }
-
-    pub fn track_losses(&mut self, mut winner_ids: Vec<i32>) {
+    pub fn track_losses(&mut self, mut winner_ids: Vec<usize>) {
         self.lost_against.append(&mut winner_ids);
     }
 
-    pub fn clear_winner(&mut self, winner_id: i32) {
+    pub fn clear_winner(&mut self, winner_id: usize) {
         let i = self.lost_against.iter().position(|id| id == &winner_id);
         match i {
             Some(i) => {
@@ -116,16 +97,15 @@ impl Entry {
             None => (),
         }
     }
-
     pub fn clear_losses(&mut self) {
         self.lost_against = vec![];
     }
 
-    pub fn lost_against(&self) -> &Vec<i32> {
+    pub fn lost_against(&self) -> &Vec<usize> {
         &self.lost_against
     }
 
-    pub fn clear_removed_ids(&mut self, rem_loser_ids: Vec<i32>) {
+    pub fn clear_removed_ids(&mut self, rem_loser_ids: Vec<usize>) {
         let mut affected_indexes: Vec<usize> = vec![];
 
         for (i, entry_id) in self.lost_against.iter().enumerate() {
@@ -135,37 +115,6 @@ impl Entry {
         }
         for i in affected_indexes.iter().rev() {
             self.lost_against.remove(*i);
-        }
-    }
-
-    pub fn id_to_entry(entries: Vec<Entry>, entry_id: i32) -> Entry {
-        entries
-            .clone()
-            .into_iter()
-            .find(|entry| entry.id == entry_id)
-            .unwrap()
-    }
-
-    pub fn get_entries_as_ids(entries: &Vec<Entry>) -> Vec<i32> {
-        entries
-            .into_iter()
-            .clone()
-            .map(|entry| entry.id)
-            .collect::<Vec<i32>>()
-    }
-
-    pub fn check_if_favorite(&mut self, all_sheet_entries: &Vec<Entry>) -> bool {
-        let full_entries: Vec<&Entry> = all_sheet_entries
-            .iter()
-            .filter(|e| self.lost_against.contains(&e.id))
-            .collect();
-
-        if full_entries.iter().all(|e| e.rank != 0) {
-            let ranks = full_entries.iter().map(|e| e.rank);
-            self.rank = ranks.max().unwrap();
-            true
-        } else {
-            false
         }
     }
 }
@@ -184,10 +133,9 @@ impl Sheet {
         }
     }
 
-    pub fn new(all_sheets: &Vec<Sheet>, name: &str, color: u8, note: &str) -> Sheet {
-        let next_index = all_sheets.len() as i32 + 1;
+    pub fn new(sheet_len: usize, name: &str, color: u8, note: &str) -> Sheet {
         Sheet {
-            id: next_index,
+            id: sheet_len + 1,
             name: name.into(),
             color,
             note: note.into(),
@@ -196,7 +144,7 @@ impl Sheet {
     }
 
     pub fn new_debug(
-        id: i32,
+        id: usize,
         name: &str,
         color: u8,
         note: &str,
@@ -214,24 +162,43 @@ impl Sheet {
         self.entries.to_owned()
     }
 
-    pub fn interactive_create(&self, all_sheets: &Vec<Sheet>) -> Sheet {
-        let (name, _, color, note) = self.interactive_create_root();
-        Sheet::new(all_sheets, &name, color, &note)
-    }
-
-    pub fn get_sheet_by_id(sheets: Vec<Sheet>, sheet_id: i32) -> Sheet {
+    pub fn get_sheet_by_id(sheets: Vec<Sheet>, sheet_id: usize) -> Sheet {
         sheets
             .clone()
             .into_iter()
             .find(|sheet| sheet.id == sheet_id)
             .unwrap()
     }
-
     pub fn clear_all_favorites(&mut self) {
         for i in 0..self.entries.len() {
             self.entries[i].clear_losses();
             self.entries[i].rank = 0;
         }
+    }
+    pub fn interactive_create_root(msg: &str) -> (String, u8, String) {
+        let colors = all::<AvailableColors>().collect::<Vec<_>>();
+
+        let name: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt(format!("Enter this {msg}'s name"))
+            .interact()
+            .unwrap();
+        let color: usize = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick a color")
+            .items(&colors)
+            .interact()
+            .unwrap();
+        let note: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Any notes?")
+            .interact()
+            .unwrap();
+        (name, color.try_into().unwrap(), note)
+    }
+    pub fn interactive_create(sheet_len: usize) -> Sheet {
+        let (name, color, note) = Sheet::interactive_create_root("Sheet");
+        Sheet::new(sheet_len, &name, color, &note)
+    }
+    pub fn interactive_create_entry(&mut self) {
+        let (name, color, note) = Sheet::interactive_create_root("Entry");
     }
 }
 
@@ -289,33 +256,6 @@ impl Display for AvailableColors {
 //
 // Traits
 //
-
-impl InteractiveCreate for Entry {}
-impl InteractiveCreate for Sheet {}
-trait InteractiveCreate {
-    fn interactive_create_root(&self) -> (String, i32, u8, String) {
-        let colors = all::<AvailableColors>().collect::<Vec<_>>();
-
-        let name: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your sheet (use space)")
-            .interact()
-            .unwrap();
-        let id: i32 = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your sheet (use space)")
-            .interact()
-            .unwrap();
-        let color: usize = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your sheet (use space)")
-            .items(&colors)
-            .interact()
-            .unwrap();
-        let note: String = Input::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your sheet (use space)")
-            .interact()
-            .unwrap();
-        (name, id, color.try_into().unwrap(), note)
-    }
-}
 
 trait InteractiveEdit {
     //for sheet and entry

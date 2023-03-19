@@ -94,7 +94,7 @@ fn picker_setup(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
     merge_entry_vecs(&mut survivors, &mut losers, &mut ranked)
 }
 
-fn register_winners(winner_ids: Vec<i32>, mut losers: Vec<Entry>) -> Vec<Entry> {
+fn register_winners(winner_ids: Vec<usize>, mut losers: Vec<Entry>) -> Vec<Entry> {
     for loser in losers.as_mut_slice() {
         let mut cloned_ids = winner_ids.clone();
         loser.lost_against.append(&mut cloned_ids);
@@ -176,7 +176,7 @@ fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
         .into_iter()
         .filter(|e| !selected_survivors.iter().any(|w| w.id == e.id))
         .collect();
-    let mut winner_ids: Vec<i32> = selected_survivors
+    let mut winner_ids: Vec<usize> = selected_survivors
         .clone()
         .into_iter()
         .map(|w| w.id)
@@ -357,7 +357,7 @@ fn debug_db(mut db: Database) -> Database {
         &mut entry_vec.to_owned(),
     ));
     db.all_sheets.push(Sheet::new(
-        &db.all_sheets,
+        db.all_sheets.len(),
         "Books",
         AvailableColors::Green as u8,
         "",
