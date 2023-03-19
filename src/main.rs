@@ -1,8 +1,14 @@
-pub mod mods;
+mod colors;
+mod database;
+mod entries;
+mod sheets;
+
+use database::Database;
+use entries::Entry;
+use sheets::Sheet;
 
 use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Select};
 use log::debug;
-use mods::{mult_menu_creation, AvailableColors, Database, Entry, EntryBag, Sheet};
 use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
