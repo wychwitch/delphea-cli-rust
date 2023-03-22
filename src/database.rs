@@ -1,16 +1,16 @@
+use crate::colors::AvailableColors;
 use crate::entries::Entry;
 use crate::sheets::Sheet;
 use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Select};
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Error, Write};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
     pub all_entries: Vec<Entry>,
     pub all_sheets: Vec<Sheet>,
 }
-
-//
-//Implementations
-//
 
 impl Database {
     pub fn save(&self) {}
@@ -19,49 +19,172 @@ impl Database {
         let sheet_id = menu_creation(&self.all_sheets, "sheet");
         sheet_id
     }
-}
+    pub fn save_db(&self) -> Result<(), Error> {
+        let db_json = serde_json::to_string(self).unwrap();
+        let path = "db.json";
+        let mut output = File::create(path)?;
+        write!(output, "{}", db_json);
+        Ok(())
+    }
 
-///
-/// helper
-///
-
-pub fn menu_creation<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
-    let selection_i: usize = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt(format!("Pick your {msg} (use space)"))
-        .items(&choices)
-        .interact()
-        .unwrap();
-
-    selection_i
-}
-
-pub fn validate_selection(
-    selection: Option<Vec<usize>>,
-    choices_len: usize,
-) -> Result<Vec<usize>, String> {
-    match selection {
-        Some(selec) => match selec.len() != choices_len && selec.len() != 0 {
-            true => Ok(selec),
-            false => {
-                if selec.len() == 0 {
-                    return Err("You must select something".to_owned());
-                } else {
-                    return Err("You need to leave one option unselected!".to_owned());
-                }
+    pub fn load_db() -> Database {
+        let db = match File::open("db.json") {
+            Ok(file) => {
+                let db: Database =
+                    serde_json::from_reader(file).expect("error while reading or parsing");
+                dbg!("loaded!");
+                db
             }
-        },
-        None => Err("Canceled".to_owned()),
+            Err(_) => Database {
+                all_entries: vec![],
+                all_sheets: vec![],
+            },
+        };
+        db
+    }
+
+    pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
+        let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
+        let mut is_processed = false;
+        let mut quit_bool: bool = false;
+        let mut processed_survivors: Vec<Entry> = survivors.to_owned();
+        let mut processed_losers: Vec<Entry> = losers.to_owned();
+        let mut processed_ranked: Vec<Entry> = ranked.to_owned();
+        while !is_processed && !quit_bool {
+            let mut returned_survivors: Vec<Entry> = vec![];
+            let mut returned_losers: Vec<Entry> = vec![];
+            let mut v_chunked: Vec<Vec<Entry>> =
+                processed_survivors.chunks(10).map(|x| x.to_vec()).collect();
+            for chunk in v_chunked {
+                let mut picked_survivors;
+                let mut picked_losers;
+                (quit_bool, (picked_survivors, picked_losers)) = picker(chunk);
+                processed_losers.append(&mut picked_losers);
+                returned_survivors.append(&mut picked_survivors);
+            }
+            (processed_survivors, processed_losers, ranked) =
+                check_for_finished_round(returned_survivors, processed_losers, ranked);
+            is_processed = processed_survivors.len() == 0;
+        }
+        println!("DONE!!");
+        merge_entry_vecs(&mut survivors, &mut losers, &mut ranked)
+    }
+    fn check_for_finished_round(
+        mut survivors: Vec<Entry>,
+        mut losers: Vec<Entry>,
+        mut ranked: Vec<Entry>,
+    ) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
+        let mut returned_survivors: Vec<Entry>;
+        let mut returned_losers: Vec<Entry>;
+        let mut returned_ranked: Vec<Entry>;
+        if survivors.len() == 1 {
+            let mut winner = survivors.pop().unwrap();
+            (returned_survivors, returned_losers, returned_ranked) =
+                process_winner(winner, losers, ranked);
+            while returned_survivors.len() == 1 {
+                winner = returned_survivors.pop().unwrap();
+                (returned_survivors, returned_losers, returned_ranked) =
+                    process_winner(winner, returned_losers, returned_ranked);
+                // panic!("jumped into here!");
+            }
+            //returned_survivors = dbg!(returned_survivors);
+            returned_ranked = dbg!(returned_ranked);
+            (returned_survivors, returned_losers, returned_ranked)
+        } else {
+            (survivors, losers, ranked)
+        }
     }
 }
 
-pub fn mult_menu_creation<T: std::fmt::Display + std::fmt::Debug>(
-    choices: &[T],
-    msg: &str,
-) -> Result<Vec<usize>, String> {
-    let selection_i = MultiSelect::with_theme(&SimpleTheme)
-        .with_prompt(format!("Pick your {msg} (use space)"))
-        .items(&choices)
-        .interact_opt()
-        .unwrap();
-    validate_selection(selection_i, choices.len())
+pub fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
+    let mut quit_bool = false;
+    let selection_result: Result<Vec<usize>, String> =
+        mult_menu_creation(survivors.as_slice(), "entries");
+    let selection = match selection_result {
+        Ok(selec) => selec,
+        Err(msg) => panic!("{}", msg),
+    };
+    let selected_survivors: Vec<Entry> = selection
+        .into_iter()
+        .map(|s| survivors[s].clone())
+        .collect();
+    let mut found_losers: Vec<Entry> = survivors
+        .into_iter()
+        .filter(|e| !selected_survivors.iter().any(|w| w.id == e.id))
+        .collect();
+    let mut winner_ids: Vec<usize> = selected_survivors
+        .clone()
+        .into_iter()
+        .map(|w| w.id)
+        .collect();
+    let found_losers = register_winners(winner_ids, found_losers);
+
+    (false, (selected_survivors, found_losers))
+}
+pub fn process_winner(
+    mut ranked_winner: Entry,
+    mut losers: Vec<Entry>,
+    mut ranked: Vec<Entry>,
+) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
+    let highest_rank = ranked.len() + 1;
+    ranked_winner.rank = highest_rank;
+    ranked_winner.lost_against = vec![];
+
+    for mut entry in &mut losers {
+        entry.clear_winner(ranked_winner.id)
+    }
+
+    let released_entries: Vec<Entry> = losers
+        .clone()
+        .into_iter()
+        .filter(|e| e.get_lost_len() == 0)
+        .collect();
+
+    ranked.push(ranked_winner);
+    //dbg!(losers.clone());
+    //THIS IS HWE PROBLEMDASXJGHDSHJGSD
+    let new_losers: Vec<Entry> = losers
+        .clone()
+        .into_iter()
+        .filter(|e| e.get_lost_len() != 0)
+        .collect();
+    //dbg!(new_losers.clone());
+    //dbg!(ranked.clone());
+    (released_entries.clone(), new_losers, ranked)
+}
+pub fn register_winners(winner_ids: Vec<usize>, mut losers: Vec<Entry>) -> Vec<Entry> {
+    for loser in losers.as_mut_slice() {
+        let mut cloned_ids = winner_ids.clone();
+        loser.lost_against.append(&mut cloned_ids);
+    }
+    losers
+}
+///
+/// Takes a list of entries and split it into 3 categories
+pub fn categorize_entries(entries: Vec<Entry>) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
+    let mut losers: Vec<Entry> = vec![];
+    let mut ranked: Vec<Entry> = vec![];
+    let mut survivors: Vec<Entry> = vec![];
+    for entry in entries {
+        if entry.rank > 0 {
+            ranked.push(entry);
+        } else if entry.get_lost_len() > 0 {
+            losers.push(entry);
+        } else {
+            survivors.push(entry);
+        }
+    }
+    (survivors, losers, ranked)
+}
+
+pub fn merge_entry_vecs(
+    survivors: &mut Vec<Entry>,
+    losers: &mut Vec<Entry>,
+    ranked: &mut Vec<Entry>,
+) -> Vec<Entry> {
+    let mut entries: Vec<Entry> = vec![];
+    entries.append(ranked);
+    entries.append(losers);
+    entries.append(survivors);
+    entries
 }

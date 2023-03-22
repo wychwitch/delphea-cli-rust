@@ -1,10 +1,6 @@
 use console::Style;
-use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
-use std::{
-    borrow::BorrowMut,
-    fmt::{self, Display},
-};
+use std::fmt::{self, Display};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Entry {
