@@ -1,6 +1,6 @@
 use crate::colors::AvailableColors;
 use crate::entries::Entry;
-use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Select};
+use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};

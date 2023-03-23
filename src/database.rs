@@ -1,10 +1,9 @@
-use crate::colors::AvailableColors;
 use crate::entries::Entry;
+use crate::menus::{create_select, create_validated_multi_select};
 use crate::sheets::Sheet;
-use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Select};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Error, Write};
+use std::io::{Error, Write};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
@@ -16,7 +15,7 @@ impl Database {
     pub fn save(&self) {}
 
     pub fn pick_sheet_idx(&self) -> usize {
-        let sheet_id = menu_creation(&self.all_sheets, "sheet");
+        let sheet_id = create_select(&self.all_sheets, "sheet");
         sheet_id
     }
     pub fn save_db(&self) -> Result<(), Error> {
@@ -43,6 +42,11 @@ impl Database {
         db
     }
 
+    pub fn create_sheet(&mut self) {
+        let sheet = Sheet::interactive_create(self.all_sheets.len());
+        self.all_sheets.push(sheet);
+        self.save_db();
+    }
     pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
         let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
         let mut is_processed = false;
@@ -63,13 +67,13 @@ impl Database {
                 returned_survivors.append(&mut picked_survivors);
             }
             (processed_survivors, processed_losers, ranked) =
-                check_for_finished_round(returned_survivors, processed_losers, ranked);
+                Self::check_for_finished_round(returned_survivors, processed_losers, ranked);
             is_processed = processed_survivors.len() == 0;
         }
         println!("DONE!!");
         merge_entry_vecs(&mut survivors, &mut losers, &mut ranked)
     }
-    fn check_for_finished_round(
+    pub fn check_for_finished_round(
         mut survivors: Vec<Entry>,
         mut losers: Vec<Entry>,
         mut ranked: Vec<Entry>,
@@ -99,7 +103,7 @@ impl Database {
 pub fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
     let mut quit_bool = false;
     let selection_result: Result<Vec<usize>, String> =
-        mult_menu_creation(survivors.as_slice(), "entries");
+        create_validated_multi_select(survivors.as_slice(), "entries");
     let selection = match selection_result {
         Ok(selec) => selec,
         Err(msg) => panic!("{}", msg),

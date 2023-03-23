@@ -38,7 +38,7 @@ pub fn validate_selection(
         None => Err("Canceled".to_owned()),
     }
 }
-pub fn create_selection<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
+pub fn create_select<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
     let selection_i: usize = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(format!("Pick your {msg} (use space)"))
         .items(&choices)

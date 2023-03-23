@@ -4,6 +4,8 @@ mod entries;
 mod menus;
 mod sheets;
 
+use menus::create_select;
+
 use database::Database;
 
 fn setup_round(mut db: Database) {
@@ -14,7 +16,25 @@ fn setup_round(mut db: Database) {
     db.save();
 }
 
+fn create_sheet(mut db: Database) {
+    db.create_sheet();
+    main_menu(db);
+}
+
+fn main_menu(mut db: Database) {
+    let msg = "???";
+    let choices = vec!["Select sheet", "Create Sheet", "Quit"];
+    let selection_i = create_select(&choices, msg);
+    match selection_i {
+        0 => setup_round(db),
+        1 => create_sheet(db),
+        2 => println!("fuc"),
+        _ => println!("cruel angel thesis"),
+    }
+}
+
 fn main() {
     let db: Database = Database::load_db();
-    setup_round(db);
+    //dbg!(db);
+    main_menu(db);
 }
