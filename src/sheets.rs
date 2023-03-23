@@ -94,6 +94,8 @@ impl Sheet {
     }
     pub fn interactive_create_entry(&mut self) {
         let (name, color, note) = Sheet::interactive_create_root("Entry");
+        let entry = Entry::new(&self.get_entries(), self.id, &name, color, &note);
+        self.entries.push(entry);
     }
 }
 

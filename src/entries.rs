@@ -16,13 +16,7 @@ impl Entry {
     pub fn get_lost_len(&self) -> usize {
         self.lost_against.len()
     }
-    pub fn new(
-        entries: &mut Vec<Entry>,
-        sheet_id: usize,
-        name: &str,
-        color: u8,
-        note: &str,
-    ) -> Entry {
+    pub fn new(entries: &Vec<Entry>, sheet_id: usize, name: &str, color: u8, note: &str) -> Entry {
         Entry {
             id: entries.len() as usize,
             name: name.to_string(),

@@ -1,43 +1,47 @@
 use crate::entries::Entry;
 use crate::menus::{create_select, create_validated_multi_select};
 use crate::sheets::Sheet;
+use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{Error, Write};
+use std::path::PathBuf;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Database {
-    pub all_entries: Vec<Entry>,
     pub all_sheets: Vec<Sheet>,
 }
 
 impl Database {
-    pub fn save(&self) {}
-
     pub fn pick_sheet_idx(&self) -> usize {
         let sheet_id = create_select(&self.all_sheets, "sheet");
         sheet_id
     }
-    pub fn save_db(&self) -> Result<(), Error> {
+    pub fn save(&self) -> Result<(), Error> {
+        let home = home_dir().expect("could not find home dir");
+        let save_path = PathBuf::from(".local/share/delphea/delphea_db.json".to_string());
+        let path = home.join(save_path);
+
         let db_json = serde_json::to_string(self).unwrap();
-        let path = "db.json";
         let mut output = File::create(path)?;
         write!(output, "{}", db_json);
         Ok(())
     }
 
-    pub fn load_db() -> Database {
-        let db = match File::open("db.json") {
+    pub fn load() -> Database {
+        let home = home_dir().expect("could not find home dir");
+        let save_path = PathBuf::from(".local/share/delphea/delphea_db.json".to_string());
+        let path = home.join(save_path);
+        let db = match File::open(path) {
             Ok(file) => {
                 let db: Database =
                     serde_json::from_reader(file).expect("error while reading or parsing");
-                dbg!("loaded!");
                 db
             }
-            Err(_) => Database {
-                all_entries: vec![],
-                all_sheets: vec![],
-            },
+            Err(err) => {
+                dbg!(err);
+                Database { all_sheets: vec![] }
+            }
         };
         db
     }
@@ -45,7 +49,7 @@ impl Database {
     pub fn create_sheet(&mut self) {
         let sheet = Sheet::interactive_create(self.all_sheets.len());
         self.all_sheets.push(sheet);
-        self.save_db();
+        self.save();
     }
     pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
         let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
