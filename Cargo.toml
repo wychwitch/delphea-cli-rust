@@ -12,7 +12,7 @@ rand = "0.8.5"
 tui = "0.19"
 crossterm = "0.25"
 libsqlite3-sys = "0.25.2"
-
+home = "0.5.4"
 tokio = { version = "1", features = ["full"] }
 eyre = "0.6"
 
