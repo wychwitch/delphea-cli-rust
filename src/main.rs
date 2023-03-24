@@ -25,16 +25,25 @@ fn select_sheet(db: Database) {
     sheet_menu(db, sheet_i);
 }
 
-fn sheet_menu(db: Database, sheet_i: usize) {
+fn sheet_menu(mut db: Database, sheet_i: usize) {
     let msg = "an option";
-    let choices = vec!["View Sheet", "Rank Sheet", "Delete  Sheet", "Quit"];
+    let choices = vec![
+        "View Sheet",
+        "Rank Sheet",
+        "Add Entry",
+        "Delete  Sheet",
+        "Delete Entry",
+        "Quit",
+    ];
     let selection_i = create_select(&choices, msg);
 
     match selection_i {
         0 => println!("Viewing sheet! not"),
         1 => setup_ranking(db, sheet_i),
-        2 => println!("deletb"),
-        3 => println!("wowie"),
+        2 => db.create_entry(sheet_i),
+        3 => println!("deletb"),
+        4 => println!("deletb"),
+        5 => println!("wowie"),
         _ => println!("cruel angel thesis"),
     }
 }

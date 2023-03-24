@@ -47,10 +47,19 @@ impl Database {
     }
 
     pub fn create_sheet(&mut self) {
-        let sheet = Sheet::interactive_create(self.all_sheets.len());
+        let sheet_len = self.all_sheets.len();
+        let (name, color, note) = Sheet::interactive_create_root("Sheet");
+        let sheet = Sheet::new(sheet_len, &name, color, &note);
         self.all_sheets.push(sheet);
         self.save();
     }
+
+    pub fn create_entry(&mut self, sheet_i: usize) {
+        let entry_len = self.all_sheets[sheet_i].entries.len();
+        self.all_sheets[sheet_i].interactive_create_entry(entry_len);
+        self.save();
+    }
+
     pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
         let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
         let mut is_processed = false;
@@ -62,7 +71,7 @@ impl Database {
             let mut returned_survivors: Vec<Entry> = vec![];
             let mut returned_losers: Vec<Entry> = vec![];
             let mut v_chunked: Vec<Vec<Entry>> =
-                processed_survivors.chunks(10).map(|x| x.to_vec()).collect();
+                processed_survivors.chunks(11).map(|x| x.to_vec()).collect();
             for chunk in v_chunked {
                 let mut picked_survivors;
                 let mut picked_losers;
@@ -138,7 +147,7 @@ pub fn process_winner(
     ranked_winner.rank = highest_rank;
     ranked_winner.lost_against = vec![];
 
-    for mut entry in &mut losers {
+    for entry in &mut losers {
         entry.clear_winner(ranked_winner.id)
     }
 

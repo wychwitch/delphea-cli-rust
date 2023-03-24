@@ -16,9 +16,10 @@ impl Entry {
     pub fn get_lost_len(&self) -> usize {
         self.lost_against.len()
     }
-    pub fn new(entries: &Vec<Entry>, sheet_id: usize, name: &str, color: u8, note: &str) -> Entry {
+    pub fn new(entries_len: usize, name: &str, color: u8, note: &str) -> Entry {
+        let id = entries_len + 1;
         Entry {
-            id: entries.len() as usize,
+            id,
             name: name.to_string(),
             color,
             note: note.to_string(),

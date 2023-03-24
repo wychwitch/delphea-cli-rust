@@ -15,19 +15,6 @@ pub struct Sheet {
 }
 
 impl Sheet {
-    pub fn debug_add_entries(&mut self, entries: &mut Vec<Entry>) {
-        for i in 1..=80 {
-            let entry = Entry::new(
-                entries,
-                self.id,
-                &format!("Entry {}", i),
-                AvailableColors::Lavender as u8,
-                "",
-            );
-            entries.push(entry);
-        }
-    }
-
     pub fn new(sheet_len: usize, name: &str, color: u8, note: &str) -> Sheet {
         Sheet {
             id: sheet_len + 1,
@@ -88,13 +75,9 @@ impl Sheet {
             .unwrap();
         (name, color.try_into().unwrap(), note)
     }
-    pub fn interactive_create(sheet_len: usize) -> Sheet {
-        let (name, color, note) = Sheet::interactive_create_root("Sheet");
-        Sheet::new(sheet_len, &name, color, &note)
-    }
-    pub fn interactive_create_entry(&mut self) {
-        let (name, color, note) = Sheet::interactive_create_root("Entry");
-        let entry = Entry::new(&self.get_entries(), self.id, &name, color, &note);
+    pub fn interactive_create_entry(&mut self, entry_len: usize) {
+        let (name, color, note) = Sheet::interactive_create_root("Entries");
+        let entry = Entry::new(entry_len, &name, color, &note);
         self.entries.push(entry);
     }
 }
