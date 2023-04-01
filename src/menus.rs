@@ -1,4 +1,6 @@
-use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Input, MultiSelect, Select};
+use std::io::Error;
+
+use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Confirm, Input, MultiSelect, Select};
 
 pub fn create_validated_multi_select<T: std::fmt::Display + std::fmt::Debug>(
     choices: &[T],
@@ -39,11 +41,15 @@ pub fn validate_selection(
     }
 }
 pub fn create_select<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
-    let selection_i: usize = Select::with_theme(&ColorfulTheme::default())
+    let selection_i: usize = Select::with_theme(&SimpleTheme)
         .with_prompt(format!("Pick your {msg} (use space)"))
         .items(&choices)
         .interact()
         .unwrap();
 
     selection_i
+}
+
+pub fn confirm(msg: &str) -> Result<bool, Error> {
+    Confirm::new().with_prompt(msg).interact()
 }

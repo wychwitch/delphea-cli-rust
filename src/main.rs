@@ -4,7 +4,7 @@ mod entries;
 mod menus;
 mod sheets;
 
-use menus::create_select;
+use menus::{confirm, create_select};
 
 use database::Database;
 
@@ -48,14 +48,42 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
     }
 }
 
+fn edit_sheet(mut db: Database) {
+    print!("Doh!");
+    main_menu(db);
+}
+
+fn delete_sheet(mut db: Database) {
+    let sheet_idx = db.pick_sheet_idx();
+    let sheet_name = &db.all_sheets[sheet_idx].name;
+    match confirm(&format!("Are you sure you want to delete {}", sheet_name)) {
+        Ok(choice) => match choice {
+            true => {
+                db.all_sheets.swap_remove(sheet_idx);
+                db.save();
+                println!("Sheet deleted!")
+            }
+            false => main_menu(db),
+        },
+        Err(_) => main_menu(db),
+    }
+}
+
 fn main_menu(mut db: Database) {
     let msg = "???";
-    let choices = vec!["Select sheet", "Create Sheet", "Quit"];
+    let choices = vec![
+        "Select sheet",
+        "Create Sheet",
+        "edit sheet",
+        "delete sheet",
+        "Quit",
+    ];
     let selection_i = create_select(&choices, msg);
     match selection_i {
         0 => select_sheet(db),
         1 => create_sheet(db),
-        2 => println!("fuc"),
+        2 => edit_sheet(db),
+        3 => delete_sheet(db),
         _ => println!("cruel angel thesis"),
     }
 }
