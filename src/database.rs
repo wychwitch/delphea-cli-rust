@@ -104,7 +104,7 @@ impl Database {
                     process_winner(winner, returned_losers, returned_ranked);
                 // panic!("jumped into here!");
             }
-            //returned_survivors = dbg!(returned_survivors);
+            //returned_survivors = dbg!(returned_survivors;
             returned_ranked = dbg!(returned_ranked);
             (returned_survivors, returned_losers, returned_ranked)
         } else {

@@ -31,7 +31,7 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
         "View Sheet",
         "Rank Sheet",
         "Add Entry",
-        "Delete  Sheet",
+        "Delete Sheet",
         "Delete Entry",
         "Quit",
     ];

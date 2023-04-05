@@ -87,3 +87,19 @@ impl Display for Sheet {
         write!(f, "{}", self.name)
     }
 }
+
+fn delete_entry(mut self) {
+    let sheet_idx = db.pick_sheet_idx();
+    let sheet_name = &db.all_sheets[sheet_idx].name;
+    match confirm(&format!("Are you sure you want to delete {}", sheet_name)) {
+        Ok(choice) => match choice {
+            true => {
+                db.all_sheets.swap_remove(sheet_idx);
+                db.save();
+                println!("Sheet deleted!")
+            }
+            false => main_menu(db),
+        },
+        Err(_) => main_menu(db),
+    }
+}
