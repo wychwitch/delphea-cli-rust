@@ -50,7 +50,7 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
     let selection_i = create_select(&choices, msg);
 
     match selection_i {
-        0 => println!("Viewing sheet! not"),
+        0 => db.all_sheets[sheet_i].view_entries(),
         1 => setup_ranking(db, sheet_i),
         2 => db.create_entry(sheet_i),
         3 => println!("deletb"),

@@ -3,8 +3,9 @@ use crate::entries::Entry;
 use crate::menus::{confirm, create_select, create_validated_multi_select};
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
+use minus::{page_all, Pager};
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display};
+use std::fmt::{self, Display, Write};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sheet {
@@ -103,8 +104,17 @@ impl Sheet {
 
     pub fn view_entries(&mut self) {
         self.entries.sort_by(|a, b| a.rank.cmp(&b.rank));
-        let unranked_entries_count = self.entries.iter().filter(|&e| *e.rank == 0).count();
+        let unranked_entries_count = self.entries.iter().filter(|&e| e.rank == 0).count();
         self.entries.rotate_left(unranked_entries_count);
+        let mut output = Pager::new();
+        for entry in &self.entries {
+            let rank = match entry.rank {
+                0 => "unranked".to_string(),
+                _ => entry.rank.to_string(),
+            };
+            writeln!(output, "{}: {}", rank, entry);
+        }
+        page_all(output);
     }
 }
 
