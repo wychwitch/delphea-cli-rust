@@ -1,5 +1,6 @@
 use crate::colors::AvailableColors;
 use crate::entries::Entry;
+use crate::menus::{confirm, create_select, create_validated_multi_select};
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
@@ -57,6 +58,10 @@ impl Sheet {
             self.entries[i].rank = 0;
         }
     }
+    pub fn select_from_all_entries(&self, msg: &str) -> usize {
+        let entries = &self.entries;
+        create_select(&entries, msg)
+    }
     pub fn interactive_create_root(msg: &str) -> (String, u8, String) {
         let colors = all::<AvailableColors>().collect::<Vec<_>>();
 
@@ -80,26 +85,31 @@ impl Sheet {
         let entry = Entry::new(entry_len, &name, color, &note);
         self.entries.push(entry);
     }
+
+    pub fn delete_entry(&mut self) {
+        let entry_idx = self.select_from_all_entries("Select a sheet to delete");
+        let entry_name = &self.entries[entry_idx].name;
+        match confirm(&format!("Are you sure you want to delete {}", entry_name)) {
+            Ok(choice) => match choice {
+                true => {
+                    self.entries.swap_remove(entry_idx);
+                    println!("Sheet deleted!");
+                }
+                false => println!("Delete Aborted!"),
+            },
+            Err(_) => println!("Delete Aborted!"),
+        }
+    }
+
+    pub fn view_entries(&mut self) {
+        self.entries.sort_by(|a, b| a.rank.cmp(&b.rank));
+        let unranked_entries_count = self.entries.iter().filter(|&e| *e.rank == 0).count();
+        self.entries.rotate_left(unranked_entries_count);
+    }
 }
 
 impl Display for Sheet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
-    }
-}
-
-fn delete_entry(mut self) {
-    let sheet_idx = db.pick_sheet_idx();
-    let sheet_name = &db.all_sheets[sheet_idx].name;
-    match confirm(&format!("Are you sure you want to delete {}", sheet_name)) {
-        Ok(choice) => match choice {
-            true => {
-                db.all_sheets.swap_remove(sheet_idx);
-                db.save();
-                println!("Sheet deleted!")
-            }
-            false => main_menu(db),
-        },
-        Err(_) => main_menu(db),
     }
 }

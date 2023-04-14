@@ -1,5 +1,5 @@
 use crate::entries::Entry;
-use crate::menus::{create_select, create_validated_multi_select};
+use crate::menus::{confirm, create_select, create_validated_multi_select};
 use crate::sheets::Sheet;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
@@ -44,6 +44,25 @@ impl Database {
             }
         };
         db
+    }
+    pub fn delete_sheet(&mut self) {
+        let sheet_idx = self.pick_sheet_idx();
+        let sheet_name = &self.all_sheets[sheet_idx].name;
+        match confirm(&format!("Are you sure you want to delete {}", sheet_name)) {
+            Ok(choice) => match choice {
+                true => {
+                    self.all_sheets.swap_remove(sheet_idx);
+                    self.save();
+                    println!("Sheet deleted!")
+                }
+                false => (),
+            },
+            Err(_) => (),
+        }
+    }
+    pub fn delete_entry(&mut self, sheet_idx: usize) {
+        self.all_sheets[sheet_idx].delete_entry();
+        self.save();
     }
 
     pub fn create_sheet(&mut self) {

@@ -8,6 +8,18 @@ use menus::{confirm, create_select};
 
 use database::Database;
 
+// [ ] -
+// 0.1.0 TODO
+// [ ] - View Entries
+// [x] - Delete Entry
+// [x] - Delete Sheet
+// [ ] - Rank Entries selection
+// [ ] - Rank entries confirmation
+// 1.0.0 TODO
+// [ ] - Gracefully handle errors
+// [ ] - Sheet of sheets
+// [ ] - export list
+
 fn setup_ranking(mut db: Database, sheet_i: usize) {
     let mut sheet = &mut db.all_sheets[sheet_i];
     sheet.entries = Database::picker_loop(sheet.entries.to_owned());
@@ -42,8 +54,8 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
         1 => setup_ranking(db, sheet_i),
         2 => db.create_entry(sheet_i),
         3 => println!("deletb"),
-        4 => println!("deletb"),
-        5 => println!("wowie"),
+        4 => db.delete_sheet(),
+        5 => db.delete_entry(sheet_i),
         _ => println!("cruel angel thesis"),
     }
 }
