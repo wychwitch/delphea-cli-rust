@@ -79,7 +79,7 @@ impl Sheet {
             .find(|sheet| sheet.id == sheet_id)
             .unwrap()
     }
-    pub fn clear_all_favorites(&mut self) {
+    pub fn clear_all_ranked(&mut self) {
         for i in 0..self.entries.len() {
             self.entries[i].clear_losses();
             self.entries[i].rank = 0;

@@ -23,8 +23,38 @@ use database::Database;
 
 fn setup_ranking(mut db: Database, sheet_i: usize) {
     let mut sheet = &mut db.all_sheets[sheet_i];
-    sheet.entries = Database::picker_loop(sheet.entries.to_owned());
-    db.all_sheets[sheet_i] = sheet.clone();
+    if sheet.check_if_all_ranked() {
+        let confirm = menus::confirm(
+            "Looks like this sheet is already fuly ranked. Do you want to rerank everything?",
+        )
+        .unwrap();
+        if confirm {
+            sheet.clear_all_ranked();
+            sheet.entries = Database::picker_loop(sheet.entries.to_owned());
+            db.all_sheets[sheet_i] = sheet.clone();
+        }
+    } else if !sheet.check_if_all_unranked() {
+        let choices = vec!["quit", "finish ranking", "rerank everything"];
+        let choice = menus::create_select(
+            &choices,
+            "Looks like this was partially ranked. What do you want to do?",
+        );
+        match choice {
+            1 => {
+                sheet.entries = Database::picker_loop(sheet.entries.to_owned());
+                db.all_sheets[sheet_i] = sheet.clone();
+            }
+            2 => {
+                sheet.clear_all_ranked();
+                sheet.entries = Database::picker_loop(sheet.entries.to_owned());
+                db.all_sheets[sheet_i] = sheet.clone();
+            }
+            _ => (),
+        }
+    } else {
+        sheet.entries = Database::picker_loop(sheet.entries.to_owned());
+        db.all_sheets[sheet_i] = sheet.clone();
+    }
     db.save();
 }
 
