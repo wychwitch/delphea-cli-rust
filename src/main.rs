@@ -16,7 +16,7 @@ use database::Database;
 // [x] - Delete Sheet
 // [x] - Rank Entries selection
 // [x] - Rank entries confirmation
-// [ ] - fix out display bug
+// [x] - fix out display bug
 // [ ] - fix adding then ranking single item bug
 // 1.0.0 TODO
 // [ ] - Gracefully handle errors

@@ -83,11 +83,15 @@ impl Database {
 
     pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
         let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
-        let mut is_processed = false;
+        let mut is_processed;
         let mut quit_bool: bool = false;
         let mut processed_survivors: Vec<Entry> = survivors.to_owned();
         let mut processed_losers: Vec<Entry> = losers.to_owned();
         let mut processed_ranked: Vec<Entry> = ranked.to_owned();
+        (processed_survivors, processed_losers, ranked) =
+            Self::check_for_finished_round(processed_survivors, processed_losers, processed_ranked);
+        is_processed = processed_survivors.len() == 0;
+
         while !is_processed && !quit_bool {
             let mut returned_survivors: Vec<Entry> = vec![];
             let mut returned_losers: Vec<Entry> = vec![];
