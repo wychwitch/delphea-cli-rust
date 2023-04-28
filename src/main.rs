@@ -14,8 +14,10 @@ use database::Database;
 // [x] - View Entries
 // [x] - Delete Entry
 // [x] - Delete Sheet
-// [ ] - Rank Entries selection
-// [ ] - Rank entries confirmation
+// [x] - Rank Entries selection
+// [x] - Rank entries confirmation
+// [ ] - fix out display bug
+// [ ] - fix adding then ranking single item bug
 // 1.0.0 TODO
 // [ ] - Gracefully handle errors
 // [ ] - Sheet of sheets
@@ -69,6 +71,7 @@ fn select_sheet(db: Database) {
 }
 
 fn sheet_menu(mut db: Database, sheet_i: usize) {
+    let mut quit = false;
     let msg = "an option";
     let choices = vec![
         "View Sheet",

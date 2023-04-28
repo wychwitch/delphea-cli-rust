@@ -132,15 +132,14 @@ impl Sheet {
         self.entries.sort_by(|a, b| a.rank.cmp(&b.rank));
         let unranked_entries_count = self.entries.iter().filter(|&e| e.rank == 0).count();
         self.entries.rotate_left(unranked_entries_count);
-        let mut output = Pager::new();
         for entry in &self.entries {
             let rank = match entry.rank {
                 0 => "unranked".to_string(),
                 _ => entry.rank.to_string(),
             };
-            writeln!(output, "{}: {}", rank, entry);
+            print!("\n{rank}: {entry}");
         }
-        page_all(output);
+        print!("\n");
     }
 }
 
