@@ -3,35 +3,24 @@ name = "delphea-cli-rust"
 version = "0.1.0"
 edition = "2021"
 
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-dotenvy = "0.15"
 rand = "0.8.5"
 tui = "0.19"
 crossterm = "0.25"
-libsqlite3-sys = "0.25.2"
 home = "0.5.4"
-tokio = { version = "1", features = ["full"] }
-eyre = "0.6"
-
 log = "0.4" 
 tui-logger = { git = "https://github.com/gin66/tui-logger", rev = "3a3568e2464dddc2205e071234135998342d7f1d" }
-
 dialoguer = "0.10.2"
 indicatif = "0.17.2"
 console = "0.15.4"
-
-divrem = "1.0.0"
 enum-iterator = "1.2.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 
-[dependencies.minus]
-version = "^5.3.0"
-features = [
+#[dependencies.minus]
+#version = "^5.3.0"
+#features = [
    # Enable features you want. For example
-   "static_output",
-   "search"
-]
+#   "static_output",
+#   "search"
+#]

@@ -1,5 +1,4 @@
 use std::io::Error;
-
 use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Confirm, Input, MultiSelect, Select};
 
 pub fn create_validated_multi_select<T: std::fmt::Display + std::fmt::Debug>(

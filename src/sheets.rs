@@ -3,7 +3,6 @@ use crate::entries::Entry;
 use crate::menus::{confirm, create_select, create_validated_multi_select};
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
-use minus::{page_all, Pager};
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Write};
 
