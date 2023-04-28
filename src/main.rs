@@ -17,7 +17,8 @@ use database::Database;
 // [x] - Rank Entries selection
 // [x] - Rank entries confirmation
 // [x] - fix out display bug
-// [ ] - fix adding then ranking single item bug
+// [x] - fix adding then ranking single item bug
+// [ ] - remove unused dependencies
 // 1.0.0 TODO
 // [ ] - Gracefully handle errors
 // [ ] - Sheet of sheets
