@@ -1,5 +1,6 @@
 mod colors;
 mod database;
+mod debuginit;
 mod entries;
 mod menus;
 mod sheets;
@@ -10,7 +11,7 @@ use database::Database;
 
 // [ ] -
 // 0.1.0 TODO
-// [ ] - View Entries
+// [x] - View Entries
 // [x] - Delete Entry
 // [x] - Delete Sheet
 // [ ] - Rank Entries selection
@@ -50,14 +51,18 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
     let selection_i = create_select(&choices, msg);
 
     match selection_i {
-        0 => db.all_sheets[sheet_i].view_entries(),
+        0 => {
+            db.all_sheets[sheet_i].view_entries();
+            print!("how dis");
+            sheet_menu(db, sheet_i);
+        }
         1 => setup_ranking(db, sheet_i),
         2 => db.create_entry(sheet_i),
-        3 => println!("deletb"),
-        4 => db.delete_sheet(),
-        5 => db.delete_entry(sheet_i),
+        3 => db.delete_sheet(),
+        4 => db.delete_entry(sheet_i),
         _ => println!("cruel angel thesis"),
     }
+    print!("owie");
 }
 
 fn edit_sheet(mut db: Database) {

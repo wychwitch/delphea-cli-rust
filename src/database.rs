@@ -1,3 +1,4 @@
+use crate::debuginit::debug_db;
 use crate::entries::Entry;
 use crate::menus::{confirm, create_select, create_validated_multi_select};
 use crate::sheets::Sheet;
@@ -40,7 +41,8 @@ impl Database {
             }
             Err(err) => {
                 dbg!(err);
-                Database { all_sheets: vec![] }
+                //Database { all_sheets: vec![] }
+                debug_db(Database { all_sheets: vec![] })
             }
         };
         db
@@ -103,7 +105,7 @@ impl Database {
             is_processed = processed_survivors.len() == 0;
         }
         println!("DONE!!");
-        merge_entry_vecs(&mut survivors, &mut losers, &mut ranked)
+        merge_entry_vecs(&mut processed_survivors, &mut processed_losers, &mut ranked)
     }
     pub fn check_for_finished_round(
         mut survivors: Vec<Entry>,
@@ -184,8 +186,9 @@ pub fn process_winner(
         .into_iter()
         .filter(|e| e.get_lost_len() != 0)
         .collect();
-    //dbg!(new_losers.clone());
-    //dbg!(ranked.clone());
+    dbg!(new_losers.clone());
+    dbg!(ranked.clone());
+    dbg!(released_entries.clone());
     (released_entries.clone(), new_losers, ranked)
 }
 pub fn register_winners(winner_ids: Vec<usize>, mut losers: Vec<Entry>) -> Vec<Entry> {
@@ -222,5 +225,6 @@ pub fn merge_entry_vecs(
     entries.append(ranked);
     entries.append(losers);
     entries.append(survivors);
+    dbg!(entries.clone());
     entries
 }

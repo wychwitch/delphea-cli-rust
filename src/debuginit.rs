@@ -1,8 +1,9 @@
-mod database;
+use crate::colors::AvailableColors;
+use crate::database::Database;
+use crate::entries::Entry;
+use crate::sheets::Sheet;
 
-use database::Database;
-
-fn debug_db(mut db: Database) -> Database {
+pub fn debug_db(mut db: Database) -> Database {
     let entry_vec: Vec<Entry> = vec![
         Entry {
             id: 1,
