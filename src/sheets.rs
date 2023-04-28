@@ -26,6 +26,32 @@ impl Sheet {
             entries: vec![],
         }
     }
+    pub fn check_if_all_unranked(&self) -> bool {
+        return self.entries.iter().all(|e| e.rank == 0);
+    }
+
+    pub fn check_if_all_ranked(&self) -> bool {
+        return self.entries.iter().all(|e| e.rank > 0);
+    }
+
+    pub fn before_rank_confirm(&self) -> usize {
+        if self.check_if_all_ranked() {
+            if confirm("Want to rerank this whole list?").unwrap() {
+                return 1;
+            }
+        } else if self.check_if_all_unranked() {
+            return 1;
+        } else {
+            if confirm("Want to continue where you left off?").unwrap() {
+                return 1;
+            } else {
+                if confirm("Want to restart").unwrap() {
+                    return 2;
+                }
+            }
+        }
+        return 0;
+    }
 
     pub fn new_debug(
         id: usize,
