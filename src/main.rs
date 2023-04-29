@@ -4,6 +4,7 @@ mod debuginit;
 mod entries;
 mod menus;
 mod sheets;
+use clap::Parser
 use menus::{confirm, create_select};
 use database::Database;
 
@@ -16,8 +17,9 @@ use database::Database;
 // [x] - Rank entries confirmation
 // [x] - fix out display bug
 // [x] - fix adding then ranking single item bug
-// [ ] - remove unused dependencies
+// [x] - remove unused dependencies
 // 1.0.0 TODO
+// [ ] - import as list
 // [ ] - Gracefully handle errors
 // [ ] - Sheet of sheets
 // [ ] - export list
@@ -36,7 +38,7 @@ fn setup_ranking(mut db: Database, sheet_i: usize) {
         }
     } else if !sheet.check_if_all_unranked() {
         let choices = vec!["quit", "finish ranking", "rerank everything"];
-        let choice = menus::create_select(
+        choice = menus::create_select(
             &choices,
             "Looks like this was partially ranked. What do you want to do?",
         );
