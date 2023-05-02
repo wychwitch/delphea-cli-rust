@@ -1,3 +1,8 @@
+use clap::Parser;
+use preferences::{AppInfo, Preferences, PreferencesMap};
+use std::path::PathBuf;
+
+let prefs_key = "tests/docs/basic-example";
 const APP_INFO: AppInfo = AppInfo {
     name: "Obsidian cli quick-logger",
     author: "wych(witch) <wych@wychwit.ch>",
@@ -26,3 +31,5 @@ enum Action {
     ///retrieves the currently set target file
     GetTarget,
 }
+  let args = Args::parse();
+    match args.action {}

@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+preferences = "1.1.0"
 rand = "0.8.5"
 clap = "4.2.5"
 tui = "0.19"
