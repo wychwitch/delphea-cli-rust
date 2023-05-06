@@ -80,6 +80,11 @@ impl Database {
         self.all_sheets[sheet_i].interactive_create_entry(entry_len);
         self.save();
     }
+    pub fn create_entry_cli(&mut self, sheet_i: usize, entry_name: &str) {
+        let entry_len = self.all_sheets[sheet_i].entries.len();
+        self.all_sheets[sheet_i].interactive_create_entry(entry_len);
+        self.save();
+    }
 
     pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
         let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);

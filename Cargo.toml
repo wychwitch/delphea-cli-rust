@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 preferences = "1.1.0"
 rand = "0.8.5"
-clap = "4.2.5"
+clap = {version = "4.2.5", features = ["cargo"]}
 tui = "0.19"
 crossterm = "0.25"
 home = "0.5.4"

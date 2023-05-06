@@ -4,9 +4,10 @@ mod debuginit;
 mod entries;
 mod menus;
 mod sheets;
-use clap::Parser
-use menus::{confirm, create_select};
+use clap::{arg, command, value_parser, ArgAction, Command};
 use database::Database;
+use menus::{confirm, create_select};
+use std::{error::Error, path::PathBuf};
 
 // [ ] -
 // 0.1.0 TODO
@@ -38,7 +39,7 @@ fn setup_ranking(mut db: Database, sheet_i: usize) {
         }
     } else if !sheet.check_if_all_unranked() {
         let choices = vec!["quit", "finish ranking", "rerank everything"];
-        choice = menus::create_select(
+        let choice = menus::create_select(
             &choices,
             "Looks like this was partially ranked. What do you want to do?",
         );
@@ -141,6 +142,25 @@ fn main_menu(mut db: Database) {
 
 fn main() {
     let db: Database = Database::load();
+    let matches = command!()
+        .subcommand(
+            Command::new("add")
+                .about("Adds the entry!")
+                .arg(arg!([entry] "entry name to add"))
+                .arg(arg!(-s --sheet <SHEET> "the sheet to add it to"))
+                .arg(arg!(-f --force "Force adds new sheet with the name")),
+        )
+        .get_matches();
+    if let Some(entry) = matches.get_one::<String>("entry") {
+        if let Some(sheet) = matches.get_one::<String>("sheet") {
+            let pos = db.all_sheets.iter().position(|s| &s.name == sheet);
+            match pos {
+                Some(index) => println!("{index}"),
+                None => println!("ow"),
+            }
+        }
+    }
+
     //dbg!(db);
     main_menu(db);
 }
