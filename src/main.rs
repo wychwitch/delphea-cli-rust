@@ -4,7 +4,7 @@ mod debuginit;
 mod entries;
 mod menus;
 mod sheets;
-use clap::{arg, command, value_parser, ArgAction, Command};
+use clap::{Parser, Subcommand};
 use database::Database;
 use menus::{confirm, create_select};
 use std::{error::Error, path::PathBuf};
@@ -79,6 +79,7 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
         "View Sheet",
         "Rank Sheet",
         "Add Entry",
+        "Edit Entry(Not Impl.)",
         "Delete Sheet",
         "Delete Entry",
         "Quit",
@@ -93,16 +94,12 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
         }
         1 => setup_ranking(db, sheet_i),
         2 => db.create_entry(sheet_i),
-        3 => db.delete_sheet(),
-        4 => db.delete_entry(sheet_i),
+        3 => println!("Not implemented"),
+        4 => db.delete_sheet(),
+        5 => db.delete_entry(sheet_i),
         _ => println!("cruel angel thesis"),
     }
     print!("owie");
-}
-
-fn edit_sheet(mut db: Database) {
-    print!("Doh!");
-    main_menu(db);
 }
 
 fn delete_sheet(mut db: Database) {
@@ -126,7 +123,7 @@ fn main_menu(mut db: Database) {
     let choices = vec![
         "Select sheet",
         "Create Sheet",
-        "edit sheet",
+        "edit sheet (not impl.)",
         "delete sheet",
         "Quit",
     ];
@@ -134,33 +131,43 @@ fn main_menu(mut db: Database) {
     match selection_i {
         0 => select_sheet(db),
         1 => create_sheet(db),
-        2 => edit_sheet(db),
+        2 => println!("Not yet implemented"),
         3 => delete_sheet(db),
         _ => println!("cruel angel thesis"),
     }
 }
 
+#[derive(Parser)]
+#[command(author, version, about, long_about = None )]
+struct Cli {
+    /// The Sheet to add the entry to
+    #[arg(short, long, value_name = "SHEET")]
+    sheet: Option<String>,
+
+    /// The entry name
+    #[arg(short, long, value_name = "ENTRY")]
+    entry: Option<String>,
+}
+
 fn main() {
-    let db: Database = Database::load();
-    let matches = command!()
-        .subcommand(
-            Command::new("add")
-                .about("Adds the entry!")
-                .arg(arg!([entry] "entry name to add"))
-                .arg(arg!(-s --sheet <SHEET> "the sheet to add it to"))
-                .arg(arg!(-f --force "Force adds new sheet with the name")),
-        )
-        .get_matches();
-    if let Some(entry) = matches.get_one::<String>("entry") {
-        if let Some(sheet) = matches.get_one::<String>("sheet") {
-            let pos = db.all_sheets.iter().position(|s| &s.name == sheet);
-            match pos {
-                Some(index) => println!("{index}"),
-                None => println!("ow"),
+    let cli = Cli::parse();
+    let mut db: Database = Database::load();
+
+    if let Some(entry) = cli.entry.as_deref() {
+        if let Some(sheet) = cli.sheet.as_deref() {
+            let sheet_i = db
+                .all_sheets
+                .iter()
+                .position(|s| s.name.to_lowercase() == sheet.to_lowercase());
+            match sheet_i {
+                Some(sheet_i) => {
+                    db.create_entry_cli(sheet_i, entry);
+                    println!("Added {entry} to the {sheet} sheet!");
+                }
+                None => println!("Sheet not found."),
             }
         }
+    } else {
+        main_menu(db);
     }
-
-    //dbg!(db);
-    main_menu(db);
 }

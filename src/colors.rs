@@ -1,6 +1,7 @@
 use enum_iterator::Sequence;
+use rand_derive2::RandGen;
 use std::fmt::{self, Display};
-#[derive(Debug, PartialEq, Sequence, Clone)]
+#[derive(Debug, PartialEq, Sequence, Clone, RandGen)]
 pub enum AvailableColors {
     Pink = 224,
     Yellow = 222,
@@ -40,5 +41,10 @@ impl Display for AvailableColors {
             AvailableColors::Ruby => write!(f, "Ruby"),
             AvailableColors::Red => write!(f, "Red"),
         }
+    }
+}
+impl AvailableColors {
+    pub fn random() -> AvailableColors {
+        rand::random()
     }
 }

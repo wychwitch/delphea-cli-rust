@@ -1,3 +1,4 @@
+use crate::colors::AvailableColors;
 use crate::debuginit::debug_db;
 use crate::entries::Entry;
 use crate::menus::{confirm, create_select, create_validated_multi_select};
@@ -80,10 +81,13 @@ impl Database {
         self.all_sheets[sheet_i].interactive_create_entry(entry_len);
         self.save();
     }
-    pub fn create_entry_cli(&mut self, sheet_i: usize, entry_name: &str) {
+    pub fn create_entry_cli(&mut self, sheet_i: usize, entry_name: &str) -> Entry {
         let entry_len = self.all_sheets[sheet_i].entries.len();
-        self.all_sheets[sheet_i].interactive_create_entry(entry_len);
+        let entry = Entry::new(entry_len, entry_name, AvailableColors::random() as u8, "");
+
+        self.all_sheets[sheet_i].entries.push(entry.clone());
         self.save();
+        return entry;
     }
 
     pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
