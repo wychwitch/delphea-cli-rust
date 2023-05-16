@@ -4,7 +4,7 @@ use crate::entries::Entry;
 use crate::sheets::Sheet;
 
 pub fn debug_db(mut db: Database) -> Database {
-    let entry_vec: Vec<Entry> = vec![
+    let mut entry_vec: Vec<Entry> = vec![
         Entry {
             id: 1,
             name: "Pikachu".to_string(),
@@ -91,7 +91,7 @@ pub fn debug_db(mut db: Database) -> Database {
         "Games",
         AvailableColors::Green as u8,
         "note!",
-        &mut entry_vec.to_owned(),
+        &mut entry_vec,
     ));
     db.all_sheets.push(Sheet::new(
         db.all_sheets.len(),

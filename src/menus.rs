@@ -1,5 +1,5 @@
+use dialoguer::{theme::SimpleTheme, Confirm, MultiSelect, Select};
 use std::io::Error;
-use dialoguer::{theme::ColorfulTheme, theme::SimpleTheme, Confirm, Input, MultiSelect, Select};
 
 pub fn create_validated_multi_select<T: std::fmt::Display + std::fmt::Debug>(
     choices: &[T],
@@ -15,7 +15,7 @@ pub fn create_mult_select<T: std::fmt::Display + std::fmt::Debug>(
 ) -> Option<Vec<usize>> {
     let selection_i = MultiSelect::with_theme(&SimpleTheme)
         .with_prompt(format!("Pick your {msg} (use space)"))
-        .items(&choices)
+        .items(choices)
         .interact_opt()
         .unwrap();
     selection_i
@@ -26,23 +26,23 @@ pub fn validate_selection(
     choices_len: usize,
 ) -> Result<Vec<usize>, String> {
     match selection {
-        Some(selec) => match selec.len() != choices_len && selec.len() != 0 {
+        Some(selec) => match selec.len() != choices_len && !selec.is_empty() {
             true => Ok(selec),
             false => {
-                if selec.len() == 0 {
-                    return Err("You must select something".to_owned());
+                if selec.is_empty() {
+                    Err("You must select something".to_owned())
                 } else {
-                    return Err("You need to leave one option unselected!".to_owned());
+                    Err("You need to leave one option unselected!".to_owned())
                 }
             }
         },
         None => Err("Canceled".to_owned()),
     }
 }
-pub fn create_select<T: std::fmt::Display>(choices: &Vec<T>, msg: &str) -> usize {
+pub fn create_select<T: std::fmt::Display>(choices: &[T], msg: &str) -> usize {
     let selection_i: usize = Select::with_theme(&SimpleTheme)
         .with_prompt(format!("Pick your {msg} (use space)"))
-        .items(&choices)
+        .items(choices)
         .interact()
         .unwrap();
 

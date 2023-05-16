@@ -1,10 +1,10 @@
 use crate::colors::AvailableColors;
 use crate::entries::Entry;
-use crate::menus::{confirm, create_select, create_validated_multi_select};
+use crate::menus::{confirm, create_select};
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
-use std::fmt::{self, Display, Write};
+use std::fmt::{self, Display};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sheet {
@@ -33,25 +33,6 @@ impl Sheet {
         return self.entries.iter().all(|e| e.rank > 0);
     }
 
-    pub fn before_rank_confirm(&self) -> usize {
-        if self.check_if_all_ranked() {
-            if confirm("Want to rerank this whole list?").unwrap() {
-                return 1;
-            }
-        } else if self.check_if_all_unranked() {
-            return 1;
-        } else {
-            if confirm("Want to continue where you left off?").unwrap() {
-                return 1;
-            } else {
-                if confirm("Want to restart").unwrap() {
-                    return 2;
-                }
-            }
-        }
-        return 0;
-    }
-
     pub fn new_debug(
         id: usize,
         name: &str,
@@ -67,17 +48,7 @@ impl Sheet {
             entries: entries.to_owned(),
         }
     }
-    pub fn get_entries(&mut self) -> Vec<Entry> {
-        self.entries.to_owned()
-    }
 
-    pub fn get_sheet_by_id(sheets: Vec<Sheet>, sheet_id: usize) -> Sheet {
-        sheets
-            .clone()
-            .into_iter()
-            .find(|sheet| sheet.id == sheet_id)
-            .unwrap()
-    }
     pub fn clear_all_ranked(&mut self) {
         for i in 0..self.entries.len() {
             self.entries[i].clear_losses();
@@ -86,7 +57,7 @@ impl Sheet {
     }
     pub fn select_from_all_entries(&self, msg: &str) -> usize {
         let entries = &self.entries;
-        create_select(&entries, msg)
+        create_select(entries, msg)
     }
     pub fn interactive_create_root(msg: &str) -> (String, u8, String) {
         let colors = all::<AvailableColors>().collect::<Vec<_>>();
@@ -136,9 +107,9 @@ impl Sheet {
                 0 => "unranked".to_string(),
                 _ => entry.rank.to_string(),
             };
-            print!("\n{rank}: {entry}");
+            println!("{rank}: {entry}");
         }
-        print!("\n");
+        println!();
     }
 }
 

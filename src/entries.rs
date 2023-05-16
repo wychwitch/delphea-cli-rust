@@ -28,38 +28,14 @@ impl Entry {
         }
     }
 
-    pub fn track_losses(&mut self, mut winner_ids: Vec<usize>) {
-        self.lost_against.append(&mut winner_ids);
-    }
-
     pub fn clear_winner(&mut self, winner_id: usize) {
         let i = self.lost_against.iter().position(|id| id == &winner_id);
-        match i {
-            Some(i) => {
-                self.lost_against.swap_remove(i);
-            }
-            None => (),
+        if let Some(i) = i {
+            self.lost_against.swap_remove(i);
         }
     }
     pub fn clear_losses(&mut self) {
         self.lost_against = vec![];
-    }
-
-    pub fn lost_against(&self) -> &Vec<usize> {
-        &self.lost_against
-    }
-
-    pub fn clear_removed_ids(&mut self, rem_loser_ids: Vec<usize>) {
-        let mut affected_indexes: Vec<usize> = vec![];
-
-        for (i, entry_id) in self.lost_against.iter().enumerate() {
-            if rem_loser_ids.contains(entry_id) {
-                affected_indexes.push(i);
-            }
-        }
-        for i in affected_indexes.iter().rev() {
-            self.lost_against.remove(*i);
-        }
     }
 }
 

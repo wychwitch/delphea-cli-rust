@@ -16,8 +16,7 @@ pub struct Database {
 
 impl Database {
     pub fn pick_sheet_idx(&self) -> usize {
-        let sheet_id = create_select(&self.all_sheets, "sheet");
-        sheet_id
+        create_select(&self.all_sheets, "sheet")
     }
     pub fn save(&self) -> Result<(), Error> {
         let home = home_dir().expect("could not find home dir");
@@ -26,15 +25,17 @@ impl Database {
 
         let db_json = serde_json::to_string(self).unwrap();
         let mut output = File::create(path)?;
-        write!(output, "{}", db_json);
-        Ok(())
+        match write!(output, "{}", db_json) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }
     }
 
     pub fn load() -> Database {
         let home = home_dir().expect("could not find home dir");
         let save_path = PathBuf::from(".local/share/delphea/delphea_db.json".to_string());
         let path = home.join(save_path);
-        let db = match File::open(path) {
+        match File::open(path) {
             Ok(file) => {
                 let db: Database =
                     serde_json::from_reader(file).expect("error while reading or parsing");
@@ -45,27 +46,32 @@ impl Database {
                 //Database { all_sheets: vec![] }
                 debug_db(Database { all_sheets: vec![] })
             }
-        };
-        db
+        }
     }
     pub fn delete_sheet(&mut self) {
         let sheet_idx = self.pick_sheet_idx();
-        let sheet_name = &self.all_sheets[sheet_idx].name;
-        match confirm(&format!("Are you sure you want to delete {}", sheet_name)) {
-            Ok(choice) => match choice {
+        let sheet_name = &self.all_sheets[sheet_idx].name.to_owned();
+
+        if let Ok(choice) = confirm(&format!("Are you sure you want to delete {}", sheet_name)) {
+            match choice {
                 true => {
                     self.all_sheets.swap_remove(sheet_idx);
-                    self.save();
+                    match self.save() {
+                        Ok(_) => (),
+                        Err(e) => print!("{e}"),
+                    }
                     println!("Sheet deleted!")
                 }
                 false => (),
-            },
-            Err(_) => (),
+            }
         }
     }
     pub fn delete_entry(&mut self, sheet_idx: usize) {
         self.all_sheets[sheet_idx].delete_entry();
-        self.save();
+        match self.save() {
+            Ok(_) => (),
+            Err(e) => print!("{e}"),
+        }
     }
 
     pub fn create_sheet(&mut self) {
@@ -73,38 +79,45 @@ impl Database {
         let (name, color, note) = Sheet::interactive_create_root("Sheet");
         let sheet = Sheet::new(sheet_len, &name, color, &note);
         self.all_sheets.push(sheet);
-        self.save();
+        match self.save() {
+            Ok(_) => (),
+            Err(e) => print!("{e}"),
+        }
     }
 
     pub fn create_entry(&mut self, sheet_i: usize) {
         let entry_len = self.all_sheets[sheet_i].entries.len();
         self.all_sheets[sheet_i].interactive_create_entry(entry_len);
-        self.save();
+        match self.save() {
+            Ok(_) => (),
+            Err(e) => print!("{e}"),
+        }
     }
-    pub fn create_entry_cli(&mut self, sheet_i: usize, entry_name: &str) -> Entry {
+    pub fn create_entry_cli(&mut self, sheet_i: usize, entry_name: &str) {
         let entry_len = self.all_sheets[sheet_i].entries.len();
         let entry = Entry::new(entry_len, entry_name, AvailableColors::random() as u8, "");
 
-        self.all_sheets[sheet_i].entries.push(entry.clone());
-        self.save();
-        return entry;
+        self.all_sheets[sheet_i].entries.push(entry);
+        match self.save() {
+            Ok(_) => (),
+            Err(e) => print!("{e}"),
+        }
     }
 
-    pub fn picker_loop(mut sheet_entries: Vec<Entry>) -> Vec<Entry> {
-        let (mut survivors, mut losers, mut ranked) = categorize_entries(sheet_entries);
+    pub fn picker_loop(sheet_entries: Vec<Entry>) -> Vec<Entry> {
+        let (survivors, losers, mut ranked) = categorize_entries(sheet_entries);
         let mut is_processed;
         let mut quit_bool: bool = false;
-        let mut processed_survivors: Vec<Entry> = survivors.to_owned();
-        let mut processed_losers: Vec<Entry> = losers.to_owned();
-        let mut processed_ranked: Vec<Entry> = ranked.to_owned();
+        let mut processed_survivors: Vec<Entry> = survivors;
+        let mut processed_losers: Vec<Entry> = losers;
+        let processed_ranked: Vec<Entry> = ranked.to_owned();
         (processed_survivors, processed_losers, ranked) =
             Self::check_for_finished_round(processed_survivors, processed_losers, processed_ranked);
-        is_processed = processed_survivors.len() == 0;
+        is_processed = processed_survivors.is_empty();
 
         while !is_processed && !quit_bool {
             let mut returned_survivors: Vec<Entry> = vec![];
-            let mut returned_losers: Vec<Entry> = vec![];
-            let mut v_chunked: Vec<Vec<Entry>> =
+            let v_chunked: Vec<Vec<Entry>> =
                 processed_survivors.chunks(11).map(|x| x.to_vec()).collect();
             for chunk in v_chunked {
                 let mut picked_survivors;
@@ -115,15 +128,15 @@ impl Database {
             }
             (processed_survivors, processed_losers, ranked) =
                 Self::check_for_finished_round(returned_survivors, processed_losers, ranked);
-            is_processed = processed_survivors.len() == 0;
+            is_processed = processed_survivors.is_empty();
         }
         println!("DONE!!");
         merge_entry_vecs(&mut processed_survivors, &mut processed_losers, &mut ranked)
     }
     pub fn check_for_finished_round(
         mut survivors: Vec<Entry>,
-        mut losers: Vec<Entry>,
-        mut ranked: Vec<Entry>,
+        losers: Vec<Entry>,
+        ranked: Vec<Entry>,
     ) -> (Vec<Entry>, Vec<Entry>, Vec<Entry>) {
         let mut returned_survivors: Vec<Entry>;
         let mut returned_losers: Vec<Entry>;
@@ -148,7 +161,6 @@ impl Database {
 }
 
 pub fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
-    let mut quit_bool = false;
     let selection_result: Result<Vec<usize>, String> =
         create_validated_multi_select(survivors.as_slice(), "entries");
     let selection = match selection_result {
@@ -159,11 +171,11 @@ pub fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
         .into_iter()
         .map(|s| survivors[s].clone())
         .collect();
-    let mut found_losers: Vec<Entry> = survivors
+    let found_losers: Vec<Entry> = survivors
         .into_iter()
         .filter(|e| !selected_survivors.iter().any(|w| w.id == e.id))
         .collect();
-    let mut winner_ids: Vec<usize> = selected_survivors
+    let winner_ids: Vec<usize> = selected_survivors
         .clone()
         .into_iter()
         .map(|w| w.id)
@@ -202,7 +214,7 @@ pub fn process_winner(
     dbg!(new_losers.clone());
     dbg!(ranked.clone());
     dbg!(released_entries.clone());
-    (released_entries.clone(), new_losers, ranked)
+    (released_entries, new_losers, ranked)
 }
 pub fn register_winners(winner_ids: Vec<usize>, mut losers: Vec<Entry>) -> Vec<Entry> {
     for loser in losers.as_mut_slice() {

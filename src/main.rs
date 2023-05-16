@@ -4,11 +4,10 @@ mod debuginit;
 mod entries;
 mod menus;
 mod sheets;
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use database::Database;
 use menus::{confirm, create_select};
 use std::env;
-use std::{error::Error, path::PathBuf};
 
 // [ ] -
 // 0.1.0 TODO
@@ -61,7 +60,10 @@ fn setup_ranking(mut db: Database, sheet_i: usize) {
         sheet.entries = Database::picker_loop(sheet.entries.to_owned());
         db.all_sheets[sheet_i] = sheet.clone();
     }
-    db.save();
+    match db.save() {
+        Ok(_) => (),
+        Err(e) => print!("{e}"),
+    }
 }
 
 fn create_sheet(mut db: Database) {
@@ -75,7 +77,6 @@ fn select_sheet(db: Database) {
 }
 
 fn sheet_menu(mut db: Database, sheet_i: usize) {
-    let mut quit = false;
     let msg = "an option";
     let choices = vec![
         "View Sheet",
@@ -111,7 +112,10 @@ fn delete_sheet(mut db: Database) {
         Ok(choice) => match choice {
             true => {
                 db.all_sheets.swap_remove(sheet_idx);
-                db.save();
+                match db.save() {
+                    Ok(_) => (),
+                    Err(e) => print!("{e}"),
+                }
                 println!("Sheet deleted!")
             }
             false => main_menu(db),
@@ -120,7 +124,7 @@ fn delete_sheet(mut db: Database) {
     }
 }
 
-fn main_menu(mut db: Database) {
+fn main_menu(db: Database) {
     let msg = "???";
     let choices = vec![
         "Select sheet",
