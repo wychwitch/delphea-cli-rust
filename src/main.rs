@@ -19,9 +19,10 @@ use std::{error::Error, path::PathBuf};
 // [x] - fix out display bug
 // [x] - fix adding then ranking single item bug
 // [x] - remove unused dependencies
-// 1.0.0 TODO
-// [ ] - import as list
 // [ ] - Gracefully handle errors
+// 1.0.0 TODO
+// [ ] - Todo type of Sheets
+// [ ] - import as list
 // [ ] - Sheet of sheets
 // [ ] - export list
 
