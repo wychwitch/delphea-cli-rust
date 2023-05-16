@@ -8,6 +8,7 @@ use clap::{Parser, Subcommand};
 use database::Database;
 use menus::{confirm, create_select};
 use std::{error::Error, path::PathBuf};
+use std::env;
 
 // [ ] -
 // 0.1.0 TODO
@@ -154,20 +155,34 @@ fn main() {
     let mut db: Database = Database::load();
 
     if let Some(entry) = cli.entry.as_deref() {
-        if let Some(sheet) = cli.sheet.as_deref() {
-            let sheet_i = db
+        let sheet_i = match cli.sheet.as_deref(){
+            Some(sheet) => {
+             db
                 .all_sheets
                 .iter()
-                .position(|s| s.name.to_lowercase() == sheet.to_lowercase());
-            match sheet_i {
-                Some(sheet_i) => {
-                    db.create_entry_cli(sheet_i, entry);
-                    println!("Added {entry} to the {sheet} sheet!");
+                .position(|s| s.name.to_lowercase() == sheet.to_lowercase())
+            },
+            None => {
+                match env::var("DELPHEA_SHEET"){
+                    Result(sheet)=>{
+                    db
+                    .all_sheets
+                    .iter()
+                    .position(|s| s.name.to_lowercase() == sheet.to_lowercase())
+                    },
+                        Err(e) => None
+                    }
                 }
-                None => println!("Sheet not found."),
+        };
+        match sheet_i {
+            Some(sheet_i) => {
+                db.create_entry_cli(sheet_i, entry);
+                println!("Added {entry} to the {db.sheets[sheet_i]} sheet!");
             }
+            None => println!("Sheet not found."),
         }
-    } else {
+    } 
+ else {
         main_menu(db);
     }
 }
