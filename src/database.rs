@@ -6,7 +6,7 @@ use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
-use std::fs::{File, create_dir_all};
+use std::fs::{create_dir_all, File};
 use std::io::{Error, Write};
 use std::path::PathBuf;
 
@@ -25,7 +25,7 @@ impl Database {
         let path = home.join(save_path);
 
         let db_json = serde_json::to_string(self).unwrap();
-        create_dir_all(&path)?;
+        create_dir_all(home.join(".local/share/delphea/"))?;
         let mut output = File::create(path)?;
         match write!(output, "{}", db_json) {
             Ok(_) => Ok(()),
