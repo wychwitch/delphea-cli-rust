@@ -14,9 +14,9 @@ crossterm = "0.25"
 home = "0.5.4"
 log = "0.4" 
 tui-logger = { git = "https://github.com/gin66/tui-logger", rev = "3a3568e2464dddc2205e071234135998342d7f1d" }
-dialoguer = "0.10.2"
-indicatif = "0.17.2"
-console = "0.15.4"
+dialoguer = "0.10.4"
+indicatif = "0.17.3"
+console = "0.15.5"
 enum-iterator = "1.2.0"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
