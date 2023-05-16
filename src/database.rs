@@ -1,5 +1,4 @@
 use crate::colors::AvailableColors;
-use crate::debuginit::debug_db;
 use crate::entries::Entry;
 use crate::menus::{confirm, create_select, create_validated_multi_select};
 use crate::sheets::Sheet;
@@ -7,7 +6,7 @@ use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
+use std::fs::{File, create_dir_all};
 use std::io::{Error, Write};
 use std::path::PathBuf;
 
@@ -26,6 +25,7 @@ impl Database {
         let path = home.join(save_path);
 
         let db_json = serde_json::to_string(self).unwrap();
+        create_dir_all(&path)?;
         let mut output = File::create(path)?;
         match write!(output, "{}", db_json) {
             Ok(_) => Ok(()),
@@ -44,9 +44,9 @@ impl Database {
                 db
             }
             Err(err) => {
-                dbg!(err);
                 //Database { all_sheets: vec![] }
-                debug_db(Database { all_sheets: vec![] })
+                println!("error finding sheets: {}", err);
+                Database { all_sheets: vec![] }
             }
         }
     }
@@ -201,7 +201,6 @@ impl Database {
                 // panic!("jumped into here!");
             }
             //returned_survivors = dbg!(returned_survivors;
-            returned_ranked = dbg!(returned_ranked);
             (returned_survivors, returned_losers, returned_ranked)
         } else {
             (survivors, losers, ranked)
@@ -252,17 +251,13 @@ pub fn process_winner(
         .filter(|e| e.get_lost_len() == 0)
         .collect();
 
+    println!("{} ranked at #{}", ranked_winner.clone(), highest_rank);
     ranked.push(ranked_winner);
-    //dbg!(losers.clone());
-    //THIS IS HWE PROBLEMDASXJGHDSHJGSD
     let new_losers: Vec<Entry> = losers
         .clone()
         .into_iter()
         .filter(|e| e.get_lost_len() != 0)
         .collect();
-    dbg!(new_losers.clone());
-    dbg!(ranked.clone());
-    dbg!(released_entries.clone());
     (released_entries, new_losers, ranked)
 }
 pub fn register_winners(winner_ids: Vec<usize>, mut losers: Vec<Entry>) -> Vec<Entry> {
