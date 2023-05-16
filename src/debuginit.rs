@@ -3,7 +3,7 @@ use crate::database::Database;
 use crate::entries::Entry;
 use crate::sheets::Sheet;
 
-pub fn debug_db(mut db: Database) -> Database {
+pub fn _debug_db(mut db: Database) -> Database {
     let mut entry_vec: Vec<Entry> = vec![
         Entry {
             id: 1,
