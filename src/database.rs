@@ -3,6 +3,8 @@ use crate::debuginit::debug_db;
 use crate::entries::Entry;
 use crate::menus::{confirm, create_select, create_validated_multi_select};
 use crate::sheets::Sheet;
+use dialoguer::{theme::ColorfulTheme, Input, Select};
+use enum_iterator::all;
 use home::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -93,6 +95,53 @@ impl Database {
             Err(e) => print!("{e}"),
         }
     }
+    pub fn edit_entry(&mut self, sheet_i: usize) {
+        let entry_i = create_select(&self.all_sheets[sheet_i].entries, "Select an entry to edit");
+        self.all_sheets[sheet_i].interactive_edit_entry("Entry", entry_i);
+        match self.save() {
+            Ok(_) => (),
+            Err(e) => print!("{e}"),
+        }
+    }
+    pub fn interactive_edit_sheet(&mut self, original_sheet_i: usize) {
+        let original_sheet = &self.all_sheets[original_sheet_i];
+        let colors = all::<AvailableColors>().collect::<Vec<_>>();
+        let color_i = if let Some(color_i) = colors.iter().position(|c| {
+            let color = c.to_owned();
+            color as u8 == original_sheet.color
+        }) {
+            color_i
+        } else {
+            0 as usize
+        };
+
+        let name: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt(format!("Enter this sheet's name"))
+            .with_initial_text(original_sheet.name.to_owned())
+            .interact()
+            .unwrap();
+        let color_idx: usize = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick a color")
+            .items(&colors)
+            .default(color_i)
+            .interact()
+            .unwrap();
+        let color = colors[color_idx].clone();
+        let note: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Any notes?")
+            .allow_empty(true)
+            .with_initial_text(original_sheet.note.to_owned())
+            .interact()
+            .unwrap();
+        self.all_sheets[original_sheet_i] = Sheet {
+            name,
+            color: color as u8,
+            id: original_sheet.id,
+            note,
+            entries: original_sheet.entries.to_owned(),
+        }
+    }
+
     pub fn create_entry_cli(&mut self, sheet_i: usize, entry_name: &str) {
         let entry_len = self.all_sheets[sheet_i].entries.len();
         let entry = Entry::new(entry_len, entry_name, AvailableColors::random() as u8, "");

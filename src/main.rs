@@ -77,32 +77,33 @@ fn select_sheet(db: Database) {
 }
 
 fn sheet_menu(mut db: Database, sheet_i: usize) {
+    let sheet = &db.all_sheets[sheet_i];
     let msg = "an option";
     let choices = vec![
-        "View Sheet",
-        "Rank Sheet",
-        "Add Entry",
-        "Edit Entry(Not Impl.)",
-        "Delete Sheet",
-        "Delete Entry",
-        "Quit",
+        format!("View {sheet} sheet").to_owned(),
+        format!("Rank {sheet} sheet").to_owned(),
+        "Add an Entry".to_owned(),
+        "Edit an Entry".to_owned(),
+        format!("Edit {sheet} sheet").to_owned(),
+        format!("Delete {sheet} sheet").to_owned(),
+        "Delete an Entry".to_owned(),
+        "Quit".to_owned(),
     ];
     let selection_i = create_select(&choices, msg);
 
     match selection_i {
         0 => {
             db.all_sheets[sheet_i].view_entries();
-            print!("how dis");
             sheet_menu(db, sheet_i);
         }
         1 => setup_ranking(db, sheet_i),
         2 => db.create_entry(sheet_i),
-        3 => println!("Not implemented"),
-        4 => db.delete_sheet(),
-        5 => db.delete_entry(sheet_i),
-        _ => println!("cruel angel thesis"),
+        3 => db.edit_entry(sheet_i),
+        4 => edit_sheet(db, sheet_i),
+        5 => db.delete_sheet(),
+        6 => db.delete_entry(sheet_i),
+        _ => (),
     }
-    print!("owie");
 }
 
 fn delete_sheet(mut db: Database) {
@@ -123,23 +124,23 @@ fn delete_sheet(mut db: Database) {
         Err(_) => main_menu(db),
     }
 }
+pub fn edit_sheet(mut db: Database, sheet_i: usize) {
+    db.interactive_edit_sheet(sheet_i);
+    match db.save() {
+        Ok(_) => (),
+        Err(e) => print!("{e}"),
+    }
+}
 
 fn main_menu(db: Database) {
-    let msg = "???";
-    let choices = vec![
-        "Select sheet",
-        "Create Sheet",
-        "edit sheet (not impl.)",
-        "delete sheet",
-        "Quit",
-    ];
+    let msg = "option";
+    let choices = vec!["Select sheet", "Create Sheet", "delete sheet", "Quit"];
     let selection_i = create_select(&choices, msg);
     match selection_i {
         0 => select_sheet(db),
         1 => create_sheet(db),
-        2 => println!("Not yet implemented"),
-        3 => delete_sheet(db),
-        _ => println!("cruel angel thesis"),
+        2 => delete_sheet(db),
+        _ => println!("byebye"),
     }
 }
 

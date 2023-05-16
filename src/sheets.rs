@@ -1,6 +1,7 @@
 use crate::colors::AvailableColors;
 use crate::entries::Entry;
 use crate::menus::{confirm, create_select};
+use console::Style;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
 use serde::{Deserialize, Serialize};
@@ -66,17 +67,57 @@ impl Sheet {
             .with_prompt(format!("Enter this {msg}'s name"))
             .interact()
             .unwrap();
-        let color: usize = Select::with_theme(&ColorfulTheme::default())
+        let color_i: usize = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Pick a color")
             .items(&colors)
             .interact()
             .unwrap();
         let note: String = Input::with_theme(&ColorfulTheme::default())
             .with_prompt("Any notes?")
+            .allow_empty(true)
             .interact()
             .unwrap();
-        (name, color.try_into().unwrap(), note)
+        (name, colors[color_i].clone() as u8, note)
     }
+    pub fn interactive_edit_entry(&mut self, msg: &str, original_entry_i: usize) {
+        let original_entry = &self.entries[original_entry_i];
+        let colors = all::<AvailableColors>().collect::<Vec<_>>();
+        let color_i = if let Some(color_i) = colors.iter().position(|c| {
+            let color = c.to_owned();
+            color as u8 == original_entry.color
+        }) {
+            color_i
+        } else {
+            0 as usize
+        };
+        let name: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt(format!("Enter this {msg}'s name"))
+            .with_initial_text(original_entry.name.to_owned())
+            .interact()
+            .unwrap();
+        let color_idx: usize = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Pick a color")
+            .items(&colors)
+            .default(color_i)
+            .interact()
+            .unwrap();
+        let color = colors[color_idx].clone();
+        let note: String = Input::with_theme(&ColorfulTheme::default())
+            .with_prompt("Any notes?")
+            .allow_empty(true)
+            .with_initial_text(original_entry.note.to_owned())
+            .interact()
+            .unwrap();
+        self.entries[original_entry_i] = Entry {
+            name,
+            lost_against: original_entry.lost_against.to_owned(),
+            color: color as u8,
+            id: original_entry.id,
+            note,
+            rank: original_entry.rank,
+        }
+    }
+
     pub fn interactive_create_entry(&mut self, entry_len: usize) {
         let (name, color, note) = Sheet::interactive_create_root("Entries");
         let entry = Entry::new(entry_len, &name, color, &note);
@@ -115,6 +156,7 @@ impl Sheet {
 
 impl Display for Sheet {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)
+        let style = Style::new().color256(self.color);
+        write!(f, "{}", style.apply_to(&self.name))
     }
 }
