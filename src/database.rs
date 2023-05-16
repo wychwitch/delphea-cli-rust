@@ -46,7 +46,9 @@ impl Database {
             Err(err) => {
                 //Database { all_sheets: vec![] }
                 println!("error finding sheets: {}", err);
-                Database { all_sheets: vec![] }
+                let mut new_db = Database { all_sheets: vec![] };
+                new_db.create_sheet();
+                new_db
             }
         }
     }
