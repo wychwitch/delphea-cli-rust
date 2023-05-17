@@ -5,6 +5,7 @@ use crate::sheets::Sheet;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use enum_iterator::all;
 use home::home_dir;
+use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 use std::fs::{create_dir_all, File};
 use std::io::{Error, Write};
@@ -170,9 +171,11 @@ impl Database {
             let mut returned_survivors: Vec<Entry> = vec![];
             let v_chunked: Vec<Vec<Entry>> =
                 processed_survivors.chunks(11).map(|x| x.to_vec()).collect();
-            for chunk in v_chunked {
+            for mut chunk in v_chunked {
+                let mut rng = thread_rng();
                 let mut picked_survivors;
                 let mut picked_losers;
+                chunk.shuffle(&mut rng);
                 (quit_bool, (picked_survivors, picked_losers)) = picker(chunk);
                 processed_losers.append(&mut picked_losers);
                 returned_survivors.append(&mut picked_survivors);

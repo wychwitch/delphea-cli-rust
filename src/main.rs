@@ -28,7 +28,7 @@ use std::env;
 // 1.0.0 TODO
 // [ ] - complete seperating lib from cli application
 
-fn setup_ranking(mut db: Database, sheet_i: usize) {
+fn setup_ranking(db: &mut Database, sheet_i: usize) {
     let mut sheet = &mut db.all_sheets[sheet_i];
     if sheet.check_if_all_ranked() {
         let confirm = menus::confirm(
@@ -100,13 +100,31 @@ fn sheet_menu(mut db: Database, sheet_i: usize) {
             db.all_sheets[sheet_i].view_entries();
             sheet_menu(db, sheet_i);
         }
-        1 => setup_ranking(db, sheet_i),
-        2 => db.create_entry(sheet_i),
-        3 => db.edit_entry(sheet_i),
-        4 => edit_sheet(db, sheet_i),
-        5 => db.delete_sheet(),
-        6 => db.delete_entry(sheet_i),
-        _ => (),
+        1 => {
+            setup_ranking(&mut db, sheet_i);
+            sheet_menu(db, sheet_i);
+        }
+        2 => {
+            db.create_entry(sheet_i);
+            sheet_menu(db, sheet_i);
+        }
+        3 => {
+            db.edit_entry(sheet_i);
+            sheet_menu(db, sheet_i);
+        }
+        4 => {
+            edit_sheet(&mut db, sheet_i);
+            sheet_menu(db, sheet_i);
+        }
+        5 => {
+            db.delete_sheet();
+            sheet_menu(db, sheet_i);
+        }
+        6 => {
+            db.delete_entry(sheet_i);
+            sheet_menu(db, sheet_i);
+        }
+        _ => main_menu(db),
     }
 }
 
@@ -128,7 +146,7 @@ fn delete_sheet(mut db: Database) {
         Err(_) => main_menu(db),
     }
 }
-pub fn edit_sheet(mut db: Database, sheet_i: usize) {
+pub fn edit_sheet(db: &mut Database, sheet_i: usize) {
     db.interactive_edit_sheet(sheet_i);
     match db.save() {
         Ok(_) => (),

@@ -4,22 +4,31 @@ use rand_derive2::RandGen;
 use std::fmt::{self, Display};
 #[derive(Debug, PartialEq, Sequence, Clone, RandGen)]
 pub enum AvailableColors {
+    BlackSystem = 0,
+    MaroonSystem = 1,
+    GreenSystem = 2,
+    OliveSystem = 3,
+    NavySystem = 4,
+    PurpleSystem = 5,
+    TealSystem = 6,
+    SilverSystem = 7,
+    GreySystem = 8,
+    RedSystem = 9,
+    LimeSystem = 10,
+    YellowSystem = 11,
+    BlueSystem = 12,
+    FuchsiaSystem = 13,
+    AquaSystem = 14,
     Pink = 218,
-    Yellow = 222,
-    Lavender = 182,
     Orange = 173,
     Ruddy = 167,
-    Bluish = 146,
     Brown = 138,
     Magenta = 132,
-    Green = 108,
     Sky = 105,
     Storm = 103,
     Purple = 97,
-    Plum = 96,
     NeonViolet = 91,
     Ruby = 89,
-    Red = 196,
 }
 
 impl Display for AvailableColors {
@@ -28,15 +37,6 @@ impl Display for AvailableColors {
             AvailableColors::Pink => {
                 let style = Style::new().color256(AvailableColors::Pink as u8);
                 write!(f, "{}", style.apply_to("Pink"))
-            }
-            AvailableColors::Yellow => {
-                let style = Style::new().color256(AvailableColors::Yellow as u8);
-                write!(f, "{}", style.apply_to("Yellow"))
-            }
-
-            AvailableColors::Lavender => {
-                let style = Style::new().color256(AvailableColors::Lavender as u8);
-                write!(f, "{}", style.apply_to("Lavender"))
             }
 
             AvailableColors::Orange => {
@@ -49,11 +49,6 @@ impl Display for AvailableColors {
                 write!(f, "{}", style.apply_to("Ruddy"))
             }
 
-            AvailableColors::Bluish => {
-                let style = Style::new().color256(AvailableColors::Bluish as u8);
-                write!(f, "{}", style.apply_to("Bluish"))
-            }
-
             AvailableColors::Brown => {
                 let style = Style::new().color256(AvailableColors::Brown as u8);
                 write!(f, "{}", style.apply_to("Brown"))
@@ -62,11 +57,6 @@ impl Display for AvailableColors {
             AvailableColors::Magenta => {
                 let style = Style::new().color256(AvailableColors::Magenta as u8);
                 write!(f, "{}", style.apply_to("Magenta"))
-            }
-
-            AvailableColors::Green => {
-                let style = Style::new().color256(AvailableColors::Green as u8);
-                write!(f, "{}", style.apply_to("Green"))
             }
 
             AvailableColors::Sky => {
@@ -84,11 +74,6 @@ impl Display for AvailableColors {
                 write!(f, "{}", style.apply_to("Purple"))
             }
 
-            AvailableColors::Plum => {
-                let style = Style::new().color256(AvailableColors::Plum as u8);
-                write!(f, "{}", style.apply_to("Plum"))
-            }
-
             AvailableColors::NeonViolet => {
                 let style = Style::new().color256(AvailableColors::NeonViolet as u8);
                 write!(f, "{}", style.apply_to("NeonViolet"))
@@ -99,9 +84,78 @@ impl Display for AvailableColors {
                 write!(f, "{}", style.apply_to("Ruby"))
             }
 
-            AvailableColors::Red => {
-                let style = Style::new().color256(AvailableColors::Red as u8);
-                write!(f, "{}", style.apply_to("Red"))
+            AvailableColors::BlackSystem => {
+                let style = Style::new().color256(AvailableColors::BlackSystem as u8);
+                write!(f, "{}", style.apply_to("Black (System)"))
+            }
+
+            AvailableColors::MaroonSystem => {
+                let style = Style::new().color256(AvailableColors::MaroonSystem as u8);
+                write!(f, "{}", style.apply_to("Maroon (System)"))
+            }
+
+            AvailableColors::GreenSystem => {
+                let style = Style::new().color256(AvailableColors::GreenSystem as u8);
+                write!(f, "{}", style.apply_to("Green (System)"))
+            }
+
+            AvailableColors::OliveSystem => {
+                let style = Style::new().color256(AvailableColors::OliveSystem as u8);
+                write!(f, "{}", style.apply_to("Olive (System)"))
+            }
+
+            AvailableColors::NavySystem => {
+                let style = Style::new().color256(AvailableColors::NavySystem as u8);
+                write!(f, "{}", style.apply_to("Navy (System)"))
+            }
+
+            AvailableColors::PurpleSystem => {
+                let style = Style::new().color256(AvailableColors::PurpleSystem as u8);
+                write!(f, "{}", style.apply_to("Purple (System)"))
+            }
+
+            AvailableColors::TealSystem => {
+                let style = Style::new().color256(AvailableColors::TealSystem as u8);
+                write!(f, "{}", style.apply_to("Teal (System)"))
+            }
+
+            AvailableColors::SilverSystem => {
+                let style = Style::new().color256(AvailableColors::SilverSystem as u8);
+                write!(f, "{}", style.apply_to("Silver (System)"))
+            }
+
+            AvailableColors::GreySystem => {
+                let style = Style::new().color256(AvailableColors::GreySystem as u8);
+                write!(f, "{}", style.apply_to("Grey (System)"))
+            }
+
+            AvailableColors::RedSystem => {
+                let style = Style::new().color256(AvailableColors::RedSystem as u8);
+                write!(f, "{}", style.apply_to("Red (System)"))
+            }
+
+            AvailableColors::LimeSystem => {
+                let style = Style::new().color256(AvailableColors::LimeSystem as u8);
+                write!(f, "{}", style.apply_to("Lime (System)"))
+            }
+
+            AvailableColors::YellowSystem => {
+                let style = Style::new().color256(AvailableColors::YellowSystem as u8);
+                write!(f, "{}", style.apply_to("Yellow (System)"))
+            }
+
+            AvailableColors::BlueSystem => {
+                let style = Style::new().color256(AvailableColors::BlueSystem as u8);
+                write!(f, "{}", style.apply_to("Blue (System)"))
+            }
+            AvailableColors::FuchsiaSystem => {
+                let style = Style::new().color256(AvailableColors::FuchsiaSystem as u8);
+                write!(f, "{}", style.apply_to("Fuchsia (System)"))
+            }
+
+            AvailableColors::AquaSystem => {
+                let style = Style::new().color256(AvailableColors::AquaSystem as u8);
+                write!(f, "{}", style.apply_to("Aqua (System)"))
             }
         }
     }
