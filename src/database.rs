@@ -202,7 +202,6 @@ impl Database {
                     process_winner(winner, returned_losers, returned_ranked);
                 // panic!("jumped into here!");
             }
-            //returned_survivors = dbg!(returned_survivors;
             (returned_survivors, returned_losers, returned_ranked)
         } else {
             (survivors, losers, ranked)
@@ -213,9 +212,11 @@ impl Database {
 pub fn picker(survivors: Vec<Entry>) -> (bool, (Vec<Entry>, Vec<Entry>)) {
     let selection_result: Result<Vec<usize>, String> =
         create_validated_multi_select(survivors.as_slice(), "entries");
-    let selection = match selection_result {
-        Ok(selec) => selec,
-        Err(msg) => panic!("{}", msg),
+    let selection = if let Ok(selec) = selection_result {
+        selec
+    } else {
+        println!("You have to leave at least 1");
+        vec![]
     };
     let selected_survivors: Vec<Entry> = selection
         .into_iter()
@@ -296,6 +297,5 @@ pub fn merge_entry_vecs(
     entries.append(ranked);
     entries.append(losers);
     entries.append(survivors);
-    dbg!(entries.clone());
     entries
 }

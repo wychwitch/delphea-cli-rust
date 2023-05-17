@@ -20,11 +20,13 @@ use std::env;
 // [x] - fix adding then ranking single item bug
 // [x] - remove unused dependencies
 // [ ] - Gracefully handle errors
-// 1.0.0 TODO
+// 0.2.0 TODO
 // [ ] - Todo type of Sheets
 // [ ] - import as list
 // [ ] - Sheet of sheets
 // [ ] - export list
+// 1.0.0 TODO
+// [ ] - complete seperating lib from cli application
 
 fn setup_ranking(mut db: Database, sheet_i: usize) {
     let mut sheet = &mut db.all_sheets[sheet_i];
@@ -47,11 +49,13 @@ fn setup_ranking(mut db: Database, sheet_i: usize) {
         match choice {
             1 => {
                 sheet.entries = Database::picker_loop(sheet.entries.to_owned());
+                sheet.view_entries();
                 db.all_sheets[sheet_i] = sheet.clone();
             }
             2 => {
                 sheet.clear_all_ranked();
                 sheet.entries = Database::picker_loop(sheet.entries.to_owned());
+                sheet.view_entries();
                 db.all_sheets[sheet_i] = sheet.clone();
             }
             _ => (),
