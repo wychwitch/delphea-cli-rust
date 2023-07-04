@@ -7,7 +7,8 @@ mod sheets;
 use clap::{Command, Parser, Subcommand};
 use database::Database;
 use menus::{confirm, create_select};
-use std::env;
+use std::error::Error;
+use std::{env, fs, path::PathBuf};
 
 // [ ] -
 // 0.1.0 TODO
@@ -191,7 +192,7 @@ enum Commands {
 
         /// Path to file to import
         #[arg(short, long, value_name = "PATH")]
-        path: Option<String>,
+        path: String,
     },
 }
 
@@ -221,8 +222,47 @@ fn cli_commands(command: Commands, db: &mut Database) {
             }
         }
         Commands::Import { sheet, path } => {
-            println!("Import command!");
+            let sheet_i = match sheet.as_deref() {
+                Some(sheet) => db
+                    .all_sheets
+                    .iter()
+                    .position(|s| s.name.to_lowercase() == sheet.to_lowercase()),
+                None => match env::var("DELPHEA_SHEET") {
+                    Ok(sheet) => db
+                        .all_sheets
+                        .iter()
+                        .position(|s| s.name.to_lowercase() == sheet.to_lowercase()),
+                    Err(_) => None,
+                },
+            };
+            match sheet_i {
+                Some(sheet_i) => {
+                    let new_path = PathBuf::from(path.to_string());
+                    let file_vec = file_to_list(new_path);
+                    match file_vec {
+                        Some(entry_vec) => {
+                            for entry in entry_vec {
+                                db.create_entry_cli(sheet_i, &entry);
+                            }
+                        }
+                        None => println!("something went wrong!"),
+                    }
+                }
+                None => println!("Sheet not found."),
+            }
         }
+    }
+}
+
+fn file_to_list(path: PathBuf) -> Option<Vec<String>> {
+    let contents = fs::read_to_string(path);
+    println!("{:#?}", contents);
+    match contents {
+        Ok(raw_text) => {
+            let entry_vec: Vec<String> = raw_text.split("\n").map(|s| s.to_owned()).collect();
+            Some(entry_vec)
+        }
+        Err(_) => None,
     }
 }
 
