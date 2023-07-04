@@ -4,7 +4,7 @@ mod debuginit;
 mod entries;
 mod menus;
 mod sheets;
-use clap::Parser;
+use clap::{Command, Parser, Subcommand};
 use database::Database;
 use menus::{confirm, create_select};
 use std::env;
@@ -166,45 +166,71 @@ fn main_menu(db: Database) {
     }
 }
 
-#[derive(Parser)]
-#[command(author, version, about, long_about = None )]
+#[derive(Debug, Parser)]
+#[command(author, version, about, long_about = None, arg_required_else_help = false)]
 struct Cli {
-    /// The Sheet to add the entry to
-    #[arg(short, long, value_name = "SHEET")]
-    sheet: Option<String>,
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
 
-    /// The entry name
-    #[arg(short, long, value_name = "ENTRY")]
-    entry: Option<String>,
+#[derive(Debug, Subcommand)]
+enum Commands {
+    Add {
+        /// The Sheet to add the entry to
+        #[arg(short, long, value_name = "SHEET")]
+        sheet: Option<String>,
+
+        /// The entry name
+        #[arg(short, long, value_name = "ENTRY")]
+        entry: String,
+    },
+    Import {
+        /// The Sheet to add the entry to
+        #[arg(short, long, value_name = "SHEET")]
+        sheet: Option<String>,
+
+        /// Path to file to import
+        #[arg(short, long, value_name = "PATH")]
+        path: Option<String>,
+    },
+}
+
+fn cli_commands(command: Commands, db: &mut Database) {
+    match command {
+        Commands::Add { sheet, entry } => {
+            let sheet_i = match sheet.as_deref() {
+                Some(sheet) => db
+                    .all_sheets
+                    .iter()
+                    .position(|s| s.name.to_lowercase() == sheet.to_lowercase()),
+                None => match env::var("DELPHEA_SHEET") {
+                    Ok(sheet) => db
+                        .all_sheets
+                        .iter()
+                        .position(|s| s.name.to_lowercase() == sheet.to_lowercase()),
+                    Err(_) => None,
+                },
+            };
+            match sheet_i {
+                Some(sheet_i) => {
+                    db.create_entry_cli(sheet_i, &entry);
+                    let name = &db.all_sheets[sheet_i];
+                    println!("Added {entry} to the {name} sheet!");
+                }
+                None => println!("Sheet not found."),
+            }
+        }
+        Commands::Import { sheet, path } => {
+            println!("Import command!");
+        }
+    }
 }
 
 fn main() {
     let cli = Cli::parse();
     let mut db: Database = Database::load();
-
-    if let Some(entry) = cli.entry.as_deref() {
-        let sheet_i = match cli.sheet.as_deref() {
-            Some(sheet) => db
-                .all_sheets
-                .iter()
-                .position(|s| s.name.to_lowercase() == sheet.to_lowercase()),
-            None => match env::var("DELPHEA_SHEET") {
-                Ok(sheet) => db
-                    .all_sheets
-                    .iter()
-                    .position(|s| s.name.to_lowercase() == sheet.to_lowercase()),
-                Err(_) => None,
-            },
-        };
-        match sheet_i {
-            Some(sheet_i) => {
-                db.create_entry_cli(sheet_i, entry);
-                let name = &db.all_sheets[sheet_i];
-                println!("Added {entry} to the {name} sheet!");
-            }
-            None => println!("Sheet not found."),
-        }
-    } else {
-        main_menu(db);
+    match cli.command {
+        Some(command) => cli_commands(command, &mut db),
+        None => main_menu(db),
     }
 }
