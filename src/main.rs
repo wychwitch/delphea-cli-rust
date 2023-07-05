@@ -242,7 +242,10 @@ fn cli_commands(command: Commands, db: &mut Database) {
                     match file_vec {
                         Some(entry_vec) => {
                             for entry in entry_vec {
-                                db.create_entry_cli(sheet_i, &entry);
+                                if entry != "" {
+                                    db.create_entry_cli(sheet_i, &entry);
+                                    println!("Added {} to the sheet", entry);
+                                }
                             }
                         }
                         None => println!("something went wrong!"),
@@ -256,13 +259,15 @@ fn cli_commands(command: Commands, db: &mut Database) {
 
 fn file_to_list(path: PathBuf) -> Option<Vec<String>> {
     let contents = fs::read_to_string(path);
-    println!("{:#?}", contents);
     match contents {
         Ok(raw_text) => {
             let entry_vec: Vec<String> = raw_text.split("\n").map(|s| s.to_owned()).collect();
             Some(entry_vec)
         }
-        Err(_) => None,
+        Err(e) => {
+            println!("Error! {}", e);
+            None
+        }
     }
 }
 
