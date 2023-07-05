@@ -4,10 +4,9 @@ mod debuginit;
 mod entries;
 mod menus;
 mod sheets;
-use clap::{Command, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use database::Database;
 use menus::{confirm, create_select};
-use std::error::Error;
 use std::{env, fs, path::PathBuf};
 
 // [ ] -
