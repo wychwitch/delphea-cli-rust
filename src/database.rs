@@ -160,7 +160,9 @@ impl Database {
         let (survivors, losers, mut ranked) = categorize_entries(sheet_entries);
         let mut is_processed;
         let mut quit_bool: bool = false;
+        let mut rng = thread_rng();
         let mut processed_survivors: Vec<Entry> = survivors;
+        processed_survivors.shuffle(&mut rng);
         let mut processed_losers: Vec<Entry> = losers;
         let processed_ranked: Vec<Entry> = ranked.to_owned();
         (processed_survivors, processed_losers, ranked) =
@@ -172,7 +174,6 @@ impl Database {
             let v_chunked: Vec<Vec<Entry>> =
                 processed_survivors.chunks(11).map(|x| x.to_vec()).collect();
             for mut chunk in v_chunked {
-                let mut rng = thread_rng();
                 let mut picked_survivors;
                 let mut picked_losers;
                 chunk.shuffle(&mut rng);
